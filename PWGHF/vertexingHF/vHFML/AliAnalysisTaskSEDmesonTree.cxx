@@ -629,7 +629,7 @@ void AliAnalysisTaskSEDmesonTree::UserExec(Option_t * /*option*/)
             std::vector<double> modelPred = {};
             bool isMLsel = false;
             double ptCand = dMeson->Pt();
-            double eta = dMeson->Eta();
+            double y = dMeson->Y(fPdgD);
             double phi = dMeson->Phi();
 
             if((fDecChannel == kD0toKpi && (isSelected == 1 || isSelected == 3)) || fDecChannel == kDplustoKpipi || fDecChannel == kDstartoD0pi)
@@ -676,7 +676,7 @@ void AliAnalysisTaskSEDmesonTree::UserExec(Option_t * /*option*/)
                             break;
                     }
 
-                    std::vector<double> var4nSparse = {mass, ptCand, ptB, centrality, double(Ntracklets), eta, phi};
+                    std::vector<double> var4nSparse = {mass, ptCand, ptB, centrality, double(Ntracklets), y, phi};
                     if(fDependOnMLSelector && fApplyML)
                         var4nSparse.insert(var4nSparse.end(), scoresFromMLSelector[iCand].begin(), scoresFromMLSelector[iCand].end());
                     else if(fApplyML)
@@ -749,7 +749,7 @@ void AliAnalysisTaskSEDmesonTree::UserExec(Option_t * /*option*/)
                             break;
                     }
 
-                    std::vector<double> var4nSparse = {mass, ptCand, ptB, centrality, double(Ntracklets), eta, phi};
+                    std::vector<double> var4nSparse = {mass, ptCand, ptB, centrality, double(Ntracklets), y, phi};
                     if(fDependOnMLSelector && fApplyML)
                         var4nSparse.insert(var4nSparse.end(), scoresFromMLSelectorSecond[iCand].begin(), scoresFromMLSelectorSecond[iCand].end());
                     else if(fApplyML)
@@ -942,6 +942,7 @@ void AliAnalysisTaskSEDmesonTree::FillMCGenAccHistos(TClonesArray *arrayMC, AliA
     /// Fill MC histos for cuts study
     ///    - at GenLimAccStep and AccStep (if fFillAcceptanceLevel=false)
     ///    - at AccStep (if fFillAcceptanceLevel=true)
+    ///    - without mother rapidity cut and daughter acceptance check
 
     double zMCVertex = mcHeader->GetVtxZ(); //vertex MC
     if (TMath::Abs(zMCVertex) <= fRDCuts->GetMaxVtxZ())
@@ -987,22 +988,21 @@ void AliAnalysisTaskSEDmesonTree::FillMCGenAccHistos(TClonesArray *arrayMC, AliA
                 {
                     double pt = mcPart->Pt();
                     double rapid = mcPart->Y();
-                    double eta = mcPart->Eta();
                     double phi = mcPart->Phi();
                     isFidAcc = fRDCuts->IsInFiducialAcceptance(pt, rapid);
                     isDaugInAcc = CheckDaugAcc(arrayMC, nDau, labDau);
 
-                    if ((fFillAcceptanceLevel && isFidAcc && isDaugInAcc) || (!fFillAcceptanceLevel && TMath::Abs(rapid) < 0.5))
+                    if ((fFillAcceptanceLevel && isFidAcc && isDaugInAcc) || (!fFillAcceptanceLevel && TMath::Abs(rapid) < 0.5) || fFillNoAccAndYCut)
                     {
                         if (orig == 4 && !isParticleFromOutOfBunchPileUpEvent)
                         {
-                            double var4nSparseAcc[knVarForSparseAcc] = {pt, rapid, -999., double(Ntracklets), eta, phi};
+                            double var4nSparseAcc[knVarForSparseAcc] = {pt, rapid, -999., double(Ntracklets), phi};
                             fnSparseMC[0]->Fill(var4nSparseAcc);
                         }
                         else if (orig == 5 && !isParticleFromOutOfBunchPileUpEvent)
                         {
                             double ptB = AliVertexingHFUtils::GetBeautyMotherPt(arrayMC, mcPart);
-                            double var4nSparseAcc[knVarForSparseAcc] = {pt, rapid, ptB, double(Ntracklets), eta, phi};
+                            double var4nSparseAcc[knVarForSparseAcc] = {pt, rapid, ptB, double(Ntracklets), phi};
                             fnSparseMC[1]->Fill(var4nSparseAcc);
                         }
                     }
@@ -1052,21 +1052,23 @@ void AliAnalysisTaskSEDmesonTree::CreateEffSparses()
     if (fUseFinPtBinsForSparse)
         nPtBins = nPtBins * 10;
 
-    int nBinsAcc[knVarForSparseAcc] = {nPtBins, 20, nPtBins, 201, 20, 36};
-    double xminAcc[knVarForSparseAcc] = {0., -1., 0., -0.5, -1., 0.};
-    double xmaxAcc[knVarForSparseAcc] = {ptLims[nPtBinsCutObj], 1., ptLims[nPtBinsCutObj], 200.5, 1., 2 * TMath::Pi()};
+    int nBinsAcc[knVarForSparseAcc] = {nPtBins, 20, nPtBins, 201, 36};
+    double xminAcc[knVarForSparseAcc] = {0., -1., 0., -0.5, 0.};
+    double xmaxAcc[knVarForSparseAcc] = {ptLims[nPtBinsCutObj], 1., ptLims[nPtBinsCutObj], 200.5, 2 * TMath::Pi()};
 
     TString label[2] = {"fromC", "fromB"};
     for (int iHist = 0; iHist < 2; iHist++)
     {
-        TString titleSparse = Form("MC nSparse (%s)- %s", fFillAcceptanceLevel ? "Acc.Step" : "Gen.Acc.Step", label[iHist].Data());
+        TString name = fFillAcceptanceLevel ? "Acc.Step" : "Gen.Acc.Step";
+        if (fFillNoAccAndYCut)
+            name = "No Acc. and Y Cut";
+        TString titleSparse = Form("MC nSparse (%s)- %s", name.Data(), label[iHist].Data());
         fnSparseMC[iHist] = new THnSparseF(Form("fnSparseAcc_%s", label[iHist].Data()), titleSparse.Data(), knVarForSparseAcc, nBinsAcc, xminAcc, xmaxAcc);
         fnSparseMC[iHist]->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/c)");
         fnSparseMC[iHist]->GetAxis(1)->SetTitle("#it{y}");
         fnSparseMC[iHist]->GetAxis(2)->SetTitle("#it{p}_{T}^{B} (GeV/c)");
         fnSparseMC[iHist]->GetAxis(3)->SetTitle("#it{N}_{tracklets}");
-        fnSparseMC[iHist]->GetAxis(4)->SetTitle("#eta");
-        fnSparseMC[iHist]->GetAxis(5)->SetTitle("#varphi");
+        fnSparseMC[iHist]->GetAxis(4)->SetTitle("#varphi");
         fOutput->Add(fnSparseMC[iHist]);
     }
 }
@@ -1122,7 +1124,7 @@ void AliAnalysisTaskSEDmesonTree::CreateRecoSparses()
         fnSparseReco[iHist]->GetAxis(2)->SetTitle("#it{p}_{T}^{B} (GeV/c)");
         fnSparseReco[iHist]->GetAxis(3)->SetTitle("centrality (%)");
         fnSparseReco[iHist]->GetAxis(4)->SetTitle("#it{N}_{tracklets}");
-        fnSparseReco[iHist]->GetAxis(5)->SetTitle("#eta");
+        fnSparseReco[iHist]->GetAxis(5)->SetTitle("#it{y}");
         fnSparseReco[iHist]->GetAxis(6)->SetTitle("#varphi");
         if(fApplyML)
         {

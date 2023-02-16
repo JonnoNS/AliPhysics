@@ -82,6 +82,8 @@ AliAnalysisTaskFlowPPTask::AliAnalysisTaskFlowPPTask() : AliAnalysisTaskSE(),
     hDCAzBefore(0),
     hDCAxy(0),
     hDCAz(0),
+	hChi2(0),
+	hChi2Before(0),
     rand(32213)
 {
     // default constructor, don't allocate memory here!
@@ -142,6 +144,8 @@ AliAnalysisTaskFlowPPTask::AliAnalysisTaskFlowPPTask(const char* name) : AliAnal
 	hDCAzBefore(0),
 	hDCAxy(0),
 	hDCAz(0),
+	hChi2(0),
+	hChi2Before(0),
 	rand(32213)
 {
     // constructor
@@ -239,14 +243,18 @@ void AliAnalysisTaskFlowPPTask::UserCreateOutputObjects()
 	fCentralityDis = new TH1F("fCentralityDis", "centrality distribution; centrality; Counts", 100, 0, 100);
 	fListOfObjects->Add(fCentralityDis);
 
-	hDCAxyBefore = new TH2F("hDCAxyBefore","DCAxy before cuts; DCAxy; Pt",100,0,10,100,0,10);
+	hDCAxyBefore = new TH2F("hDCAxyBefore","DCAxy before cuts; DCAxy; Pt",100,0,1,100,0,5);
 	fListOfObjects->Add(hDCAxyBefore);
-	hDCAxy = new TH2F("hDCAxy","DCAxy after cuts; DCAxy; Pt",100,0,0.4,100,0,3);
+	hDCAxy = new TH2F("hDCAxy","DCAxy after cuts; DCAxy; Pt",100,0,1,100,0,5);
 	fListOfObjects->Add(hDCAxy);
-	hDCAzBefore = new TH2F("hDCAzBefore","DCAz before cuts; DCAz; Pt",100,0,10,100,0,10);
+	hDCAzBefore = new TH2F("hDCAzBefore","DCAz before cuts; DCAz; Pt",100,0,4,100,0,5);
 	fListOfObjects->Add(hDCAzBefore);
-	hDCAz = new TH2F("hDCAz","DCAz before cuts; DCAz; Pt",100,0,0.4,100,0,3);
+	hDCAz = new TH2F("hDCAz","DCAz before cuts; DCAz; Pt",100,0,4,100,0,5);
 	fListOfObjects->Add(hDCAz);
+	hChi2  = new TH1D("hChi2", "TPC chi2 per cluster", 100, 0, 5);
+  	fListOfObjects->Add(hChi2);
+  	hChi2Before  = new TH1D("hChi2Before", "TPC chi2 per cluster", 100, 0, 5);
+  	fListOfObjects->Add(hChi2Before);
 
     Int_t inSlotCounter=1;
 	if(fNUA) {
@@ -310,7 +318,7 @@ void AliAnalysisTaskFlowPPTask::UserExec(Option_t *)
     //     }
 	// if(isTrigselected == false) return;
 	if(!CheckTrigger()){
-		//self-define event selection
+		//self-define trigger selection
 		PostData(1,fListOfObjects);
 		return;
 	}
@@ -510,10 +518,15 @@ Bool_t AliAnalysisTaskFlowPPTask::CheckTrigger(){
 
 	if (fTrigger == 0){
 		if(fSelectMask&(AliVEvent::kINT7+AliVEvent::kMB)){return kTRUE;}
+
 		// kInt7 or kCentral or kSemiCentral
 		if(fPeriod.EqualTo("LHC18qr_pass3")){
 			if((fSelectMask&AliVEvent::kCentral) && cent>10){return kFALSE;}
 			if((fSelectMask&AliVEvent::kSemiCentral) && (cent<30 || cent>50)){return kFALSE;}
+		}
+		else{
+			//for LHC15o pass2,only pass by kint7
+			return kFALSE;
 		}
 	}
 	else if(fTrigger==1){
@@ -700,17 +713,27 @@ void AliAnalysisTaskFlowPPTask::AnalyzeAOD(AliVEvent* aod, float centrV0, float 
 			continue;
 		}
 
+		double dcaX = pos[0] - vtxp[0]; 
+		double dcaY = pos[1] - vtxp[1];
+		double dcaZ = abs(pos[2] - vtxp[2]);
+		double dcaXY = TMath::Sqrt(dcaX*dcaX+dcaY*dcaY);
+		hDCAxyBefore->Fill(dcaXY, aodTrk->Pt());
+		hDCAzBefore->Fill(dcaZ,aodTrk->Pt());
+		hChi2Before->Fill(aodTrk->GetTPCchi2perCluster());
+
 		aodTrk->GetXYZ(pos);
 		if (!AcceptAODTrack(aodTrk, pos, vtxp)) continue;
 
 		//Fill DCAxy&z after Cuts
-		//double trackXYZ[3];
-		//aodTrk->GetXYZ(trackXYZ);
-		//trackXYZ[0] = trackXYZ[0]-vtxp[0];
-    	//trackXYZ[1] = trackXYZ[1]-vtxp[1];
-    	//trackXYZ[2] = trackXYZ[2]-vtxp[2];
-		//hDCAxy->Fill(sqrt(trackXYZ[0]*trackXYZ[0]+trackXYZ[1]*trackXYZ[1]),aodTrk->Pt());
-		//hDCAz->Fill(trackXYZ[2],aodTrk->Pt());
+		// double trackXYZ[3];
+		// aodTrk->GetXYZ(trackXYZ);
+		// trackXYZ[0] = trackXYZ[0]-vtxp[0];
+    	// trackXYZ[1] = trackXYZ[1]-vtxp[1];
+    	// trackXYZ[2] = trackXYZ[2]-vtxp[2];
+		// hDCAxy->Fill(sqrt(trackXYZ[0]*trackXYZ[0]+trackXYZ[1]*trackXYZ[1]),aodTrk->Pt());
+		// hDCAz->Fill(trackXYZ[2],aodTrk->Pt());
+		hDCAxy->Fill(dcaXY, aodTrk->Pt());
+		hDCAz->Fill(dcaZ,aodTrk->Pt());
 
 		// //manual Tracks cut
 		// double dcaZ = 100;
@@ -748,7 +771,7 @@ void AliAnalysisTaskFlowPPTask::AnalyzeAOD(AliVEvent* aod, float centrV0, float 
 
 		// if(TMath::Abs(aodTrk->Eta()) > fEtaCut) continue;
 
-
+		hChi2->Fill(aodTrk->GetTPCchi2perCluster());
 		NtrksAfter += 1;
 
 		//..get phi-weight for NUA correction
@@ -1092,8 +1115,16 @@ double AliAnalysisTaskFlowPPTask::GetPtWeight(double pt, double eta, float vz, d
 	}
 	else if(fCurrSystFlag>0&&fCurrSystFlag<9&&fCurrSystFlag!=3)
 	hTrackEfficiencyRun = (TH1D*)fTrackEfficiency->FindObject(Form("EffRescaled_Cent%d_SystFlag%d_",IntCent,fCurrSystFlag));
-	else
-	hTrackEfficiencyRun = (TH1D*)fTrackEfficiency->FindObject(Form("EffRescaled_Cent%d_SystFlag%d_",IntCent,fCurrSystFlag+7));
+	else{
+		if(fPeriod.EqualTo("LHC15o")||fPeriod.EqualTo("LHC15o_pass2")||fPeriod.EqualTo("LHC18qr_pass3")){
+			//PbPb NUE
+			hTrackEfficiencyRun = (TH1D*)fTrackEfficiency->FindObject(Form("EffRescaled_Cent%d_SystFlag%d_",IntCent,fCurrSystFlag));
+		}
+		else{
+			//XeXe NUE
+			hTrackEfficiencyRun = (TH1D*)fTrackEfficiency->FindObject(Form("EffRescaled_Cent%d_SystFlag%d_",IntCent,fCurrSystFlag+7));
+		}
+	}
 
 	//printf("========\n=======\n=======\n=======\n");
 	//printf("Using NUE flag%d Cent%d\n",fCurrSystFlag,IntCent);
