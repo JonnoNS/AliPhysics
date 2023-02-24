@@ -3,8 +3,8 @@ Author: Vytautas Vislavicius
 Contains the additional event and track selection used within the <AliGFW> framework.
 If used, modified, or distributed, please aknowledge the original author of this code.
 */
-#ifndef ALIGFWCUTS__H
-#define ALIGFWCUTS__H
+#ifndef AliGFWPbpass23Cuts__H
+#define AliGFWPbpass23Cuts__H
 #include "AliAODEvent.h"
 #include "AliVParticle.h"
 #include "AliVTrack.h"
@@ -17,16 +17,16 @@ If used, modified, or distributed, please aknowledge the original author of this
 #include "AliESDEvent.h"
 #include "TF1.h"
 
-class AliGFWCuts {
+class AliGFWPbpass23Cuts {
  public:
-  AliGFWCuts();
-  ~AliGFWCuts();
+  AliGFWPbpass23Cuts();
+  ~AliGFWPbpass23Cuts();
   Int_t AcceptParticle(AliVParticle*, Int_t BitShift=0, Double_t ptLow=-1, Double_t ptHigh=-1);
   Int_t AcceptVertex(AliAODEvent*, Int_t BitShift=0);
   Int_t AcceptVertex(AliESDEvent*, Int_t BitShift=0);
   Int_t AcceptTrack(AliAODTrack*&, Double_t*, const Int_t &BitShift=0, const Bool_t &lDisableDCAxyCheck=kTRUE);
   Int_t AcceptTrack(AliESDtrack*&, Double_t*, const Int_t &BitShift, UInt_t &PrimFlags);
-  void SetPtDepDCAXY(TString newval) { if(fPtDepXYCut) delete fPtDepXYCut; fPtDepXYCut = new TF1("ptDepDCAxy",newval.Data(),0.001,100); fPtDepXYCut->SetParameter(0,fDCAxyCut); };
+  void SetPtDepDCAXY(TString newval) { if(fPtDepXYCut) delete fPtDepXYCut; fPtDepXYCut = new TF1("ptDepDCAxy",newval.Data(),0.001,100); };
   void ResetCuts();
   void PrintSetup();
   void SetupCuts(Int_t);
