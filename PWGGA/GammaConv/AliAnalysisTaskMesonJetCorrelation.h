@@ -426,7 +426,7 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   std::vector<TH2F*> fHistoMCPartonPtVsFragTrueParton; //! vector of histos True parton pT vs. true Frag (mc particle based distribution) for particles originating from hard parton from Jet
 
  private:
-  static constexpr bool fLocalDebugFlag = false;
+  static constexpr bool fLocalDebugFlag = true;
   AliAnalysisTaskMesonJetCorrelation(const AliAnalysisTaskMesonJetCorrelation&);            // Prevent copy-construction
   AliAnalysisTaskMesonJetCorrelation& operator=(const AliAnalysisTaskMesonJetCorrelation&); // Prevent assignment
 

@@ -1503,14 +1503,21 @@ void AliAnalysisTaskMesonJetCorrelation::CallSumw2ForLists(TList* l)
 //________________________________________________________________________
 void AliAnalysisTaskMesonJetCorrelation::InitJets()
 {
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetPt = fConvJetReader->GetVectorJetPt();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetPx = fConvJetReader->GetVectorJetPx();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetPy = fConvJetReader->GetVectorJetPy();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetPz = fConvJetReader->GetVectorJetPz();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetEta = fConvJetReader->GetVectorJetEta();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetPhi = fConvJetReader->GetVectorJetPhi();
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetArea = fConvJetReader->GetVectorJetArea();
-
+cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   fVectorJetEtaPerp = fConvJetReader->GetVectorJetEta();
   for (auto& eta : fVectorJetEtaPerp) {
     eta *= -1;
@@ -1522,7 +1529,7 @@ void AliAnalysisTaskMesonJetCorrelation::InitJets()
       phi -= TMath::Pi();
     }
   }
-
+cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
   if (fIsMC > 0) {
     if (fIsMC) {
       if (!fAODMCTrackArray)
@@ -1538,6 +1545,7 @@ void AliAnalysisTaskMesonJetCorrelation::InitJets()
     fTrueVectorJetPartonID = fConvJetReader->GetTrueVectorJetParton();
     fTrueVectorJetPartonPt = fConvJetReader->GetTrueVectorJetPartonPt();
   }
+  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
 }
 
 //________________________________________________________________________
@@ -1717,7 +1725,8 @@ void AliAnalysisTaskMesonJetCorrelation::UserExec(Option_t*)
     // Jets need to be initialized before the ProcessMCParticles because they are needed in ProcessAODMCParticles
     if(fLocalDebugFlag) {printf("InitJets\n");}
     InitJets();
-
+    if(fLocalDebugFlag) {printf("InitJets done");}
+    
     // reset double counting vector
     fMesonDoubleCount.clear();
 

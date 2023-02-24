@@ -767,7 +767,6 @@ void AliEventCuts::SetupRun2pp() {
   }
   
   if (!fOverrideAutoTriggerMask) fTriggerMask = AliVEvent::kINT7;
-  ::Info("End of AliEventCuts::SetupRun2pp function");
 
 }
 
