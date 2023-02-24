@@ -857,18 +857,21 @@ void AliJCDijetAna::CalculateDeltaM(int iJetSet, unsigned uLead, unsigned uSuble
     fastjet::PseudoJet doubleDeltaCone_fifthAlt = bgsubtrJeFifth1 + bgsubtrJeFifth2Alt;
 
     dijet = dijets.at(iJetSet).at(1).at(0) + dijets.at(iJetSet).at(1).at(1);
+    mjj=dijet.m();
 
-    fDeltaM=dijet.m()-doubleDeltaCone_fifth.m();
-    double fDeltaMAlt=dijet.m()-doubleDeltaCone_fifthAlt.m();
+    fDeltaM=mjj-doubleDeltaCone_fifth.m();
+    double fDeltaMAlt=mjj-doubleDeltaCone_fifthAlt.m();
     fhistos->fh_dijetdeltaM5[iJetSet]->Fill(fDeltaM,hisWeight);
     fhistos->fh_dijetdeltaM5Alt[iJetSet]->Fill(fDeltaMAlt,hisWeight);
+    int iDijetBin2 = fhistos->GetDijetMClass(mjj);
+    fhistos->fh_dijetdeltaM5Binned[iJetSet][iDijetBin2]->Fill(fDeltaMAlt,hisWeight);
     if(bConeNearJet)    fhistos->fh_dijetdeltaM5NearCone[iJetSet]->Fill(fDeltaM,hisWeight);
     if(bConeNearJetAlt) fhistos->fh_dijetdeltaM5NearConeAlt[iJetSet]->Fill(fDeltaMAlt,hisWeight);
     if(bConesOverlap) fhistos->fh_events[lcentBin]->Fill("cones overlap", 1.0);
     if(bConesOverlapAlt) fhistos->fh_events[lcentBin]->Fill("cones overlap alt", 1.0);
     fhistos->fh_dijetMLocalRho[iJetSet]->Fill(doubleDeltaCone_fifth.m(),hisWeight);
     fhistos->fh_dijetMLocalRhoAlt[iJetSet]->Fill(doubleDeltaCone_fifthAlt.m(),hisWeight);
-    fhistos->fh_deltaMResponse[iJetSet]->Fill(dijet.m()+fDeltaM, dijet.m(),hisWeight);
+    fhistos->fh_deltaMResponse[iJetSet]->Fill(mjj+fDeltaMAlt, mjj,hisWeight);
 
     return;
 }
@@ -883,12 +886,11 @@ void AliJCDijetAna::CalculateResponse(AliJCDijetAna *anaDetMC, AliJCDijetHistos 
     unsigned NjetsDetMC = jetsDetMC.at(iJetSetDet).size();
     //cout << "Response true jets: " << Njets << endl;
     //cout << "Response det jets size:     " << NjetsDetMC << endl;
-    double maxpt=0;
-    double minR=0;
-    double deltaRMatch=0;
+    double minRGlobal=0; //Not restricted by matching
+    double deltaRMatch=0; //Only matched jets
     double ptTrue, ptDetMC;
     double deltaRLL, deltaRLS, deltaRSL, deltaRSS;
-    unsigned maxptIndex;
+    unsigned chosenMatchIndex;
     bool bfound;
     std::vector<bool> bTrueJetMatch(Njets, false);
     std::vector<bool> bDetJetMatch(NjetsDetMC, false);
@@ -896,38 +898,36 @@ void AliJCDijetAna::CalculateResponse(AliJCDijetAna *anaDetMC, AliJCDijetHistos 
     bool bSubleadingMatch = false;
     bool bSubleadingMatchDeltaPhi = false;
 
+    //Single jet pt matching by closest in eta-phi plane
     for (ujet = 0; ujet < Njets; ujet++) { //True MC jets
-        maxpt=0;
-        maxptIndex=-1;
+        chosenMatchIndex=-1;
         bfound=false;
         deltaR=0;
-        deltaRMatch=0;
-        minR=999.0;
+        deltaRMatch=999.0;
+        minRGlobal=999.0;
         ptTrue = jets.at(iJetSetPart).at(ujet).pt();
         fhistos->fh_deltaPtResponse[iJetSetPart]->Fill(ptTrue+fDeltaPt,ptTrue,hisWeight);
         fhistos->fh_deltaPtResponse_ALICE[iJetSetPart]->Fill(ptTrue+fDeltaPt,ptTrue,hisWeight);
         for (ujetDetMC = 0; ujetDetMC < NjetsDetMC; ujetDetMC++) { //Det MC jets
             if(bDetJetMatch.at(ujetDetMC)) continue; //We want to match jets only once.
             deltaR = DeltaR(jets.at(iJetSetPart).at(ujet), jetsDetMC.at(iJetSetDet).at(ujetDetMC));
-            if(deltaR<minR) minR=deltaR;
-            if(deltaR < matchingR && jetsDetMC.at(iJetSetDet).at(ujetDetMC).pt() > maxpt) {
-                maxpt = jetsDetMC.at(iJetSetDet).at(ujetDetMC).pt();
-                maxptIndex = ujetDetMC;
+            if(deltaR<minRGlobal) minRGlobal=deltaR;
+            if(deltaR < matchingR && deltaR<deltaRMatch) {
+                chosenMatchIndex = ujetDetMC;
                 deltaRMatch = deltaR;
                 bfound = true;
-                //cout << "found, detPt vs truePt: " << maxpt << " <> " << jets[iJetSetPart][ujet].pt() << ", index: " << maxptIndex << endl;
             }
         }
-        fhistos->fh_jetResponseDeltaRClosest[iJetSetPart][iJetSetDet]->Fill(minR,hisWeight);
+        fhistos->fh_jetResponseDeltaRClosest[iJetSetPart][iJetSetDet]->Fill(minRGlobal,hisWeight);
         if(bfound) {
-            ptDetMC = jetsDetMC.at(iJetSetDet).at(maxptIndex).pt();
+            ptDetMC = jetsDetMC.at(iJetSetDet).at(chosenMatchIndex).pt();
             fhistos->fh_jetResponse[iJetSetPart][iJetSetDet]->Fill(ptDetMC, ptTrue,hisWeight);
             fhistos->fh_jetResponse_ALICE[iJetSetPart][iJetSetDet]->Fill(ptDetMC, ptTrue,hisWeight);
             fhistos->fh_jetResponseDeltaR[iJetSetPart][iJetSetDet]->Fill(deltaRMatch,hisWeight);
             fhistos->fh_jetResponseDeltaPt[iJetSetPart][iJetSetDet]->Fill((ptTrue-ptDetMC)/ptTrue,hisWeight);
             fhistos->fh_responseInfo[iJetSetPart][iJetSetDet]->Fill("True jet has pair",1.0);
             bTrueJetMatch.at(ujet) = true;
-            bDetJetMatch.at(maxptIndex) = true;
+            bDetJetMatch.at(chosenMatchIndex) = true;
         } else {
             fhistos->fh_responseInfo[iJetSetPart][iJetSetDet]->Fill("True jet has no pair",1.0);
         }

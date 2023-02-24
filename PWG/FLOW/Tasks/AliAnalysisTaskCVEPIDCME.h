@@ -47,7 +47,11 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   void IfCalculateDeltaGamma(bool bCalculateDeltaGamma) { this->isCalculateDeltaGamma = bCalculateDeltaGamma; }
   void IfCalculateDiffResult(bool bCalculateDiffResult) { this->isCalculateDiffResult = bCalculateDiffResult; }
   void IfCalculateDeltaPhiSumPhi(bool bCalculateDeltaPhiSumPhi) { this->isCalculateDeltaPhiSumPhi = bCalculateDeltaPhiSumPhi; }
+  void IfCalculateLambdaLambda(bool bCalculateLambdaLambda) {this->isCalculateLambdaLambda = bCalculateLambdaLambda; }
+  void IfCalculateProtonProton(bool bCalculateProtonProton) {this->isCalculateProtonProton = bCalculateProtonProton; }
+  void IfCalculateHadronHadron(bool bCalculateHadronHadron) {this->isCalculateHadronHadron = bCalculateHadronHadron; }
   void IfNarrowDcaCuts768(bool bNarrowDcaCuts768) { this->isNarrowDcaCuts768 = bNarrowDcaCuts768; }
+  void IfStrictestProtonCut(bool bStrictestProtonCut) { this->isStrictestProtonCut = bStrictestProtonCut; }
 
   // read in
   void SetListForNUE(TList* flist) { this->fListNUE = (TList*)flist->Clone(); }
@@ -119,10 +123,12 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   bool GetVZEROPlane();
   bool GetZDCPlane();
   bool GetZDCPlaneLsFit();
+  void ResetVectors();
   bool LoopTracks();
   bool LoopV0s();
   bool PairV0Trk();
-  void ResetVectors();
+  bool PairV0V0();
+  bool PairTrkTrk();
 
   ////////////////////////
   // Functional function
@@ -147,9 +153,10 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   bool IsGoodDaughterTrack(const AliAODTrack* track);
   int GetLambdaCode(const AliAODTrack* pTrack, const AliAODTrack* ntrack);
   // Plane
-  double GetEventPlane(double qx, double qy, double harmonic);
+  double GetTPCPlaneNoAutoCorr(int id_0, int id_1, int id_2, int id_3);
+  inline double GetEventPlane(double qx, double qy, double harmonic);
   // Range phi
-  double RangeDPhi(double dphi);
+  inline double RangeDPhi(double dphi);
 
   //////////////////////
   // Switch           //
@@ -167,10 +174,11 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   bool isCalculateDeltaGamma;     // if fill γ and δ
   bool isCalculateDiffResult;     // if fill Diff Reslut
   bool isCalculateDeltaPhiSumPhi; // if fill C(delta_phi)
-  bool isNarrowDcaCuts768;
-  bool isCalculateProtonProton;
   bool isCalculateLambdaLambda;
-  bool isCalculateHardonHardon;
+  bool isCalculateProtonProton;
+  bool isCalculateHadronHadron;
+  bool isNarrowDcaCuts768;
+  bool isStrictestProtonCut;
 
   //////////////////////
   // Cuts and options //
@@ -352,7 +360,7 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   TProfile2D* fProfile2DForSinC;
   TProfile2D* fProfile2DForCosA;
   TProfile2D* fProfile2DForSinA;
-  // 15o //TODO 
+  // 15o 
   // 18q 18r
   TH1D* fHZDCCparameters;
   TH1D* fHZDCAparameters;
@@ -379,6 +387,10 @@ class AliAnalysisTaskCVEPIDCME : public AliAnalysisTaskSE
   TH2D* fHist2PDedx;
   TH1D* fHistDcaZ;
   TH1D* fHistDcaXY;
+  TH1D* fHistProtonDcaCutZ;
+  TH1D* fHistProtonDcaCutXY;
+  TH1D* fHistAntiProtonDcaCutZ;
+  TH1D* fHistAntiProtonDcaCutXY;
   TH1D* fHistPhi[2];
   TH2D* fHist2EtaPhi[2];
   // Psi QA

@@ -3,15 +3,21 @@ Author: Vytautas Vislavicius
 Contains the additional event and track selection used within the <AliGFW> framework.
 If used, modified, or distributed, please aknowledge the original author of this code.
 */
-#include "AliGFWCuts.h"
-const Int_t AliGFWCuts::fNTrackFlags=16;
-const Int_t AliGFWCuts::fNEventFlags=10;
-AliESDtrackCuts *AliGFWCuts::fTCFB32=0;
-AliESDtrackCuts *AliGFWCuts::fTCFB64=0;
-AliESDtrackCuts *AliGFWCuts::fTCFB256=0;
-AliESDtrackCuts *AliGFWCuts::fTCFB512=0;
-AliESDtrackCuts *AliGFWCuts::fTCFB16=0;
-AliGFWCuts::AliGFWCuts():
+
+/*
+ * This is a copy of the code from AliGFWCuts developed by Vytautas, it is the 20211116 version. 
+ * This old version is used by Zhiyong Lu in Pb-Pb Analysis for LHC15o pass2 and LHC18q/r pass3.
+ */
+
+#include "AliGFWPbpass23Cuts.h"
+const Int_t AliGFWPbpass23Cuts::fNTrackFlags=16;
+const Int_t AliGFWPbpass23Cuts::fNEventFlags=10;
+AliESDtrackCuts *AliGFWPbpass23Cuts::fTCFB32=0;
+AliESDtrackCuts *AliGFWPbpass23Cuts::fTCFB64=0;
+AliESDtrackCuts *AliGFWPbpass23Cuts::fTCFB256=0;
+AliESDtrackCuts *AliGFWPbpass23Cuts::fTCFB512=0;
+AliESDtrackCuts *AliGFWPbpass23Cuts::fTCFB16=0;
+AliGFWPbpass23Cuts::AliGFWPbpass23Cuts():
   fSystFlag(0),
   fFilterBit(96),
   fDCAxyCut(7.),
@@ -24,9 +30,9 @@ AliGFWCuts::AliGFWCuts():
   fRequiresExtraWeight(kTRUE)
 {
 };
-AliGFWCuts::~AliGFWCuts() {
+AliGFWPbpass23Cuts::~AliGFWPbpass23Cuts() {
 };
-Int_t AliGFWCuts::AcceptTrack(AliAODTrack *&l_Tr, Double_t *l_DCA, const Int_t &BitShift, const Bool_t &lDisableDCAxyCheck) {
+Int_t AliGFWPbpass23Cuts::AcceptTrack(AliAODTrack *&l_Tr, Double_t *l_DCA, const Int_t &BitShift, const Bool_t &lDisableDCAxyCheck) {
   if(TMath::Abs(l_Tr->Eta())>fEta) return 0;
   if(!l_Tr->TestFilterBit(fFilterBit)) return 0;
   if(fFilterBit!=2) {//Check is not valid for ITSsa tracks
@@ -38,7 +44,7 @@ Int_t AliGFWCuts::AcceptTrack(AliAODTrack *&l_Tr, Double_t *l_DCA, const Int_t &
   };
   if(l_Tr->GetTPCchi2perCluster()>fTPCChi2PerCluster) return 0;
   if(!l_DCA) return 1<<BitShift;
-  if(TMath::Abs(l_DCA[2])>fDCAzCut) return 0;
+  if(l_DCA[2]>fDCAzCut) return 0;
   if(lDisableDCAxyCheck) return 1<<BitShift;
   Double_t DCAxyValue = TMath::Sqrt(l_DCA[0]*l_DCA[0] + l_DCA[1]*l_DCA[1]);
   if(DCAxyValue > fPtDepXYCut->Eval(l_Tr->Pt())) return 0;
@@ -50,7 +56,7 @@ Int_t AliGFWCuts::AcceptTrack(AliAODTrack *&l_Tr, Double_t *l_DCA, const Int_t &
   //   return 0;
   // return 1<<BitShift;
 };
-Int_t AliGFWCuts::AcceptTrack(AliESDtrack *&l_Tr, Double_t *l_DCA, const Int_t &BitShift, UInt_t &PrimFlags) {
+Int_t AliGFWPbpass23Cuts::AcceptTrack(AliESDtrack *&l_Tr, Double_t *l_DCA, const Int_t &BitShift, UInt_t &PrimFlags) {
   //Initialize ESDtrackCuts if needed:
   if(!fTCFB32) fTCFB32 = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE);
   if(!fTCFB64) {
@@ -119,24 +125,24 @@ Int_t AliGFWCuts::AcceptTrack(AliESDtrack *&l_Tr, Double_t *l_DCA, const Int_t &
 };
 
 
-Int_t AliGFWCuts::AcceptParticle(AliVParticle *l_Pa, Int_t BitShift, Double_t ptLow, Double_t ptHigh) {
+Int_t AliGFWPbpass23Cuts::AcceptParticle(AliVParticle *l_Pa, Int_t BitShift, Double_t ptLow, Double_t ptHigh) {
   if(TMath::Abs(l_Pa->Eta())>fEta) return 0;
   if(ptLow>0) if(l_Pa->Pt()<ptLow) return 0;
   if(ptHigh>0) if(l_Pa->Pt()>ptHigh) return 0;
   return 1<<BitShift;
 };
-Int_t AliGFWCuts::AcceptVertex(AliAODEvent *l_Ev, Int_t BitShift) {
+Int_t AliGFWPbpass23Cuts::AcceptVertex(AliAODEvent *l_Ev, Int_t BitShift) {
   Double_t lvtxz = TMath::Abs(l_Ev->GetPrimaryVertex()->GetZ());
   if(lvtxz>fVtxZ) return 0;
   return 1<<BitShift;
 };
-Int_t AliGFWCuts::AcceptVertex(AliESDEvent *l_Ev, Int_t BitShift) {
+Int_t AliGFWPbpass23Cuts::AcceptVertex(AliESDEvent *l_Ev, Int_t BitShift) {
   Double_t lvtxz = TMath::Abs(l_Ev->GetPrimaryVertex()->GetZ());
   if(lvtxz>fVtxZ) return 0;
   return 1<<BitShift;
 };
 
-void AliGFWCuts::ResetCuts() {
+void AliGFWPbpass23Cuts::ResetCuts() {
   fSystFlag=0;
   fFilterBit=96;
   fDCAxyCut=7;
@@ -147,16 +153,17 @@ void AliGFWCuts::ResetCuts() {
   fTPCChi2PerCluster=2.5;
   fRequiresExtraWeight=kTRUE;
   SetPtDepDCAXY("[0]*(0.0026+0.005/(x^1.01))");//[0]*(0.0015 + 0.005/(x^1.1))");//"0.0105+0.0350/(x^1.1)");
+  fPtDepXYCut->SetParameter(0,fDCAxyCut);
 };
-void AliGFWCuts::PrintSetup() {
+void AliGFWPbpass23Cuts::PrintSetup() {
   printf("**********\n");
   printf("Syst. flag: %i\n",fSystFlag);
   printf("Eta: %f\n",fEta);
   printf("(Flag 1, 10-16) Filter bit: %i\n",fFilterBit);
   printf("(Flag 2,3,12,16) DCAxy cut: %2.0f sigma \n",fDCAxyCut);
-  printf("(Flag 4,5) DCAz cut: %.1f\n",fDCAzCut);
+  printf("(Flag 4,5) DCAz cut: %f\n",fDCAzCut);
   printf("(Flag 6-8) TPC Ncls: %i\n",fTPCNcls);
-  printf("(Flag 10-16) TPC chi2/Ncls: %.1f \n",fTPCChi2PerCluster);
+  printf("(Flag 10-16) TPC chi2/Ncls: %2.0f \n",fTPCChi2PerCluster);
   printf("Rest of the flags are global per event. Total flag = %i + vtx/ev flag\n",fNTrackFlags);
   printf("(Flag 1-3) Vertex selection: |z|<%2.1f\n",fVtxZ);
   printf("(Flag 4-5) CL1, CL2 multi. estimator (no weights)\n");
@@ -168,7 +175,7 @@ void AliGFWCuts::PrintSetup() {
   //printf("(Flag 12, disabled) ITS tracks (filter bit %i, TPC Ncls = %i)\n",fFilterBit,fTPCNcls);
   printf("**********\n");
 };
-void AliGFWCuts::SetupTrackCuts(Int_t sysflag) {
+void AliGFWPbpass23Cuts::SetupTrackCuts(Int_t sysflag) {
   switch(sysflag) {
   case 1:
     fFilterBit=768;
@@ -180,7 +187,8 @@ void AliGFWCuts::SetupTrackCuts(Int_t sysflag) {
     fPtDepXYCut->SetParameter(0,fDCAxyCut);
     break;
   case 3:
-    fDCAxyCut=7;
+    fDCAxyCut=6;
+    //DCAxyCut=6 for systematic check
     fPtDepXYCut->SetParameter(0,fDCAxyCut);
     fRequiresExtraWeight=kTRUE;
     break;
@@ -272,7 +280,7 @@ void AliGFWCuts::SetupTrackCuts(Int_t sysflag) {
     break;
   };
 };
-void AliGFWCuts::SetupEventCuts(Int_t sysflag) {
+void AliGFWPbpass23Cuts::SetupEventCuts(Int_t sysflag) {
   switch(sysflag) {
   case 1:
     fVtxZ = 5;
@@ -318,7 +326,7 @@ void AliGFWCuts::SetupEventCuts(Int_t sysflag) {
     break;
   };
 };
-void AliGFWCuts::SetupCuts(Int_t sysflag) {
+void AliGFWPbpass23Cuts::SetupCuts(Int_t sysflag) {
   ResetCuts();
   fSystFlag=sysflag;
   if(sysflag==0 || sysflag>fNTrackFlags+fNEventFlags) return;
@@ -326,7 +334,7 @@ void AliGFWCuts::SetupCuts(Int_t sysflag) {
   else SetupEventCuts(sysflag-fNTrackFlags);
 };
 
-TString *AliGFWCuts::GetTrackFlagDescriptor(Int_t sysflag) {
+TString *AliGFWPbpass23Cuts::GetTrackFlagDescriptor(Int_t sysflag) {
   TString *retstr = new TString("");
   switch(sysflag) {
   case 1:
@@ -382,7 +390,7 @@ TString *AliGFWCuts::GetTrackFlagDescriptor(Int_t sysflag) {
   };
   return retstr;
 };
-TString* AliGFWCuts::GetEventFlagDescriptor(Int_t sysflag) {
+TString* AliGFWPbpass23Cuts::GetEventFlagDescriptor(Int_t sysflag) {
   TString *retstr = new TString("");
   switch(sysflag) {
   case 1:
@@ -420,7 +428,7 @@ TString* AliGFWCuts::GetEventFlagDescriptor(Int_t sysflag) {
   };
   return retstr;
 };
-TString *AliGFWCuts::GetFlagDescription(Int_t sysflag) {
+TString *AliGFWPbpass23Cuts::GetFlagDescription(Int_t sysflag) {
   if(sysflag>0 && sysflag <= fNTrackFlags + fNEventFlags) {
     if(sysflag>fNTrackFlags) return GetEventFlagDescriptor(sysflag-fNTrackFlags);
     return GetTrackFlagDescriptor(sysflag);
@@ -430,7 +438,7 @@ TString *AliGFWCuts::GetFlagDescription(Int_t sysflag) {
   else retst->Append("Unknown_%i",sysflag);
   return retst;
 };
-Double_t AliGFWCuts::GetChi2TPCConstrained(const AliESDtrack *l_Tr) {
+Double_t AliGFWPbpass23Cuts::GetChi2TPCConstrained(const AliESDtrack *l_Tr) {
   const AliESDEvent* esdEvent = l_Tr->GetESDEvent();
   // get vertex
   const AliESDVertex* vertex = 0;
