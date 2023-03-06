@@ -58,7 +58,7 @@ void AddTask_MesonJetCorr_Conv(
 
   AliCutHandlerPCM cuts(13);
 
-  TString addTaskName = "AddTask_MesonJetCorr_ConvCalo";
+  TString addTaskName = "AddTask_MesonJetCorr_Conv";
   TString sAdditionalTrainConfig = cuts.GetSpecialSettingFromAddConfig(additionalTrainConfig, "", "", addTaskName);
   if (sAdditionalTrainConfig.Atoi() > 0) {
     trainConfig = trainConfig + sAdditionalTrainConfig.Atoi();
