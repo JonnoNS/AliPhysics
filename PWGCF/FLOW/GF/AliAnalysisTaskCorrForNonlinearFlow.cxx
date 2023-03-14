@@ -87,6 +87,8 @@ AliAnalysisTaskSE(),
   fNUE(0),
   fNUA(0),
   fIsMC(0),
+  fUseTPCTruth(0),
+  fUseFMDTruth(0),
   fNtrksName("Mult"),
 //....
   fPeriod("LHC15o"),
@@ -176,7 +178,7 @@ AliAnalysisTaskSE(),
   fPoolMaxNEvents(2000),
   fPoolMinNTracks(50000),
   fMinEventsToMix(5),
-fBootstrapStat(true),
+  fBootstrapStat(true),
   fUsePhiStarCut(kTRUE),
   fUseFMDcut(kTRUE),
   fFMDcutapar0(1.64755),
@@ -214,6 +216,8 @@ AliAnalysisTaskCorrForNonlinearFlow::AliAnalysisTaskCorrForNonlinearFlow(const c
   fNUE(_fNUE),
   fNUA(_fNUA),
   fIsMC(0),
+  fUseTPCTruth(0),
+  fUseFMDTruth(0),
   fNtrksName("Mult"),
   //....
   fPeriod(_fPeriod),
@@ -492,7 +496,6 @@ AliAnalysisTaskCorrForNonlinearFlow::~AliAnalysisTaskCorrForNonlinearFlow() {
 
 // ---------------------------------------------------------------------------------
 void AliAnalysisTaskCorrForNonlinearFlow::UserCreateOutputObjects() {
-  cout << "UserCreateOutputObjects" << endl;
   // Create output objects
   fListOfObjects = new TList();
   fListOfObjects->SetOwner();
@@ -563,13 +566,13 @@ void AliAnalysisTaskCorrForNonlinearFlow::UserCreateOutputObjects() {
   fListOfObjects->Add(fEtaAssDisBefore);
   fPtAssDisBefore = new TH1D("hPtAssDisBefore", "pt distribution", 100, 0, 5);
   fListOfObjects->Add(fPtAssDisBefore);
-  fPhiAssDisBefore = new TH1D("hEtaPhiAssDisBefore", "eta phi distribution", nPhiBins, -TMath::Pi() / 2, TMath::Pi() / 2 * 3);
+  fPhiAssDisBefore = new TH1D("hPhiAssDisBefore", "phi distribution", nPhiBins, 0, TMath::Pi() / 2 * 4);
   fListOfObjects->Add(fPhiAssDisBefore);
   fEtaTriDisBefore = new TH1D("hEtaTriDisBefore", "eta distribution", 1000, -10, 10);
   fListOfObjects->Add(fEtaTriDisBefore);
   fPtTriDisBefore = new TH1D("hPtTriDisBefore", "pt distribution", 100, 0, 5);
   fListOfObjects->Add(fPtTriDisBefore);
-  fPhiTriDisBefore = new TH1D("hEtaPhiTriDisBefore", "eta phi distribution", nPhiBins, -TMath::Pi() / 2, TMath::Pi() / 2 * 3);
+  fPhiTriDisBefore = new TH1D("hPhiTriDisBefore", "phi distribution", nPhiBins, 0, TMath::Pi() / 2 * 4);
   fListOfObjects->Add(fPhiTriDisBefore);
 
 
@@ -577,13 +580,13 @@ void AliAnalysisTaskCorrForNonlinearFlow::UserCreateOutputObjects() {
   fListOfObjects->Add(fEtaAssDis);
   fPtAssDis = new TH1D("hPtAssDis", "pt distribution", 100, 0, 5);
   fListOfObjects->Add(fPtAssDis);
-  fPhiAssDis = new TH1D("hEtaPhiAssDis", "eta phi distribution", nPhiBins, -TMath::Pi() / 2, TMath::Pi() / 2 * 3);
+  fPhiAssDis = new TH1D("hPhiAssDis", "phi distribution", nPhiBins, 0, TMath::Pi() / 2 * 4);
   fListOfObjects->Add(fPhiAssDis);
   fEtaTriDis = new TH1D("hEtaTriDis", "eta distribution", 1000, -10, 10);
   fListOfObjects->Add(fEtaTriDis);
   fPtTriDis = new TH1D("hPtTriDis", "pt distribution", 100, 0, 5);
   fListOfObjects->Add(fPtTriDis);
-  fPhiTriDis = new TH1D("hEtaPhiTriDis", "eta phi distribution", nPhiBins, -TMath::Pi() / 2, TMath::Pi() / 2 * 3);
+  fPhiTriDis = new TH1D("hPhiTriDis", "phi distribution", nPhiBins, 0, TMath::Pi() / 2 * 4);
   fListOfObjects->Add(fPhiTriDis);
 
   hFMDAvsV0 = new TH2D("hFMDAvsV0", "FMDA V0A correlation", 100, 0, 100, 100, 0, 100);
@@ -608,7 +611,6 @@ void AliAnalysisTaskCorrForNonlinearFlow::UserCreateOutputObjects() {
       fFlowPtWeightsList = (TList*) GetInputData(inSlotCounter);
       inSlotCounter++;
       fFlowFeeddownList = (TList*) GetInputData(inSlotCounter);
-      cout << "Got feeddown list" << endl;
     } else {
       fFlowPtWeightsList = (TList*) GetInputData(inSlotCounter);
     }
@@ -810,6 +812,9 @@ void AliAnalysisTaskCorrForNonlinearFlow::UserExec(Option_t *) {
 
 
   PrepareTPCFMDTracks();
+  if (fIsMC) {
+    PrepareTPCFMDTracksMCTruth();
+  }
 
 
   if (fTracksTrigCharged) {
@@ -887,8 +892,8 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelations() {
       Double_t etaTrig = trackTrig->Eta();
       Double_t chargeTrig = trackTrig->Charge();
       Double_t trigEff = 1.0; // Efficiency
-      if(fNUA == 1) trigEff *= GetFlowWeightSystematics(trackTrig, fPVz, kRefs);
-      if(fNUE == 1) trigEff *= GetPtWeight(ptTrig, etaTrig, fPVz, fInputEvent->GetRunNumber());
+      if(fNUA == 1) trigEff /= GetFlowWeightSystematics(trackTrig, fPVz, kRefs);
+      if(fNUE == 1) trigEff /= GetPtWeight(ptTrig, etaTrig, fPVz, fInputEvent->GetRunNumber());
 
       for (Int_t iAss = 0; iAss < fTracksAss->GetEntriesFast(); iAss++) {
         AliAODTrack* trackAss = dynamic_cast<AliAODTrack*>(fTracksTrigCharged->At(iAss));
@@ -897,8 +902,8 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelations() {
         Double_t etaAss = trackAss->Eta();
         Double_t chargeAss = trackAss->Charge();
         Double_t assEff = 1.0; // Efficiency
-        if(fNUA == 1) assEff *= GetFlowWeightSystematics(trackAss, fPVz, kRefs);
-        if(fNUE == 1) assEff *= GetPtWeight(ptAss, etaAss, fPVz, fInputEvent->GetRunNumber());
+        if(fNUA == 1) assEff /= GetFlowWeightSystematics(trackAss, fPVz, kRefs);
+        if(fNUE == 1) assEff /= GetPtWeight(ptAss, etaAss, fPVz, fInputEvent->GetRunNumber());
 
         if (trackTrig->GetID() == trackAss->GetID()) {
           continue;
@@ -935,7 +940,7 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelations() {
             }
           } 
         }
-        fhChargedSE->Fill(binscont, 0, trigEff*assEff);
+        fhChargedSE->Fill(binscont, 0, 1.0/(trigEff*assEff));
       } 
     } // end loop particle pairs
   } // endif TPC-TPC
@@ -953,6 +958,8 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelations() {
       Double_t phiTrig = trackTrig->Phi();
       Double_t etaTrig = trackTrig->Eta();
       Double_t trigEff = 1.0; // Efficiency
+      if(fNUA == 1) trigEff /= GetFlowWeightSystematics(trackTrig, fPVz, kRefs);
+      if(fNUE == 1) trigEff /= GetPtWeight(ptTrig, etaTrig, fPVz, fInputEvent->GetRunNumber());
 
       for (Int_t iAss = 0; iAss < fTracksAss->GetEntriesFast(); iAss++) {
 
@@ -1046,8 +1053,8 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelationsMixed() {
 
         Double_t trigEff = 1;
 
-        if(fNUA == 1) trigEff *= GetFlowWeightSystematics(trackTrig, fPVz, kRefs);
-        if(fNUE == 1) trigEff *= GetPtWeight(ptTrig, etaTrig, fPVz, fInputEvent->GetRunNumber());
+        if(fNUA == 1) trigEff /= GetFlowWeightSystematics(trackTrig, fPVz, kRefs);
+        if(fNUE == 1) trigEff /= GetPtWeight(ptTrig, etaTrig, fPVz, fInputEvent->GetRunNumber());
 
         for (Int_t iMix = 0; iMix < nMix; iMix++) {
           TObjArray* mixTracks = pool->GetEvent(iMix);
@@ -1061,8 +1068,8 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelationsMixed() {
             Double_t chargeAss = trackAss->Charge();
 
             Double_t assEff = 1;
-            if(fNUA == 1) assEff *= GetFlowWeightSystematics(trackAss, fPVz, kRefs);
-            if(fNUE == 1) assEff *= GetPtWeight(ptAss, etaAss, fPVz, fInputEvent->GetRunNumber());
+            if(fNUA == 1) assEff /= GetFlowWeightSystematics(trackAss, fPVz, kRefs);
+            if(fNUE == 1) assEff /= GetPtWeight(ptAss, etaAss, fPVz, fInputEvent->GetRunNumber());
 
             // We should not use this to reject self correlation in mixed event
             /*
@@ -1102,7 +1109,7 @@ void AliAnalysisTaskCorrForNonlinearFlow::FillCorrelationsMixed() {
                 }
               }
             }
-            fhChargedME->Fill(binscont, 0, trigEff*assEff/nMix);
+            fhChargedME->Fill(binscont, 0, 1.0/(trigEff*assEff)/nMix);
           } // end loop Ass
         } // end loop Mix
       } // end loop Trig
@@ -1220,9 +1227,162 @@ Bool_t AliAnalysisTaskCorrForNonlinearFlow::PrepareTPCFMDTracks() {
   int fNofTracksAss = 0;
   int fNofTracksTrig = 0;
 
-  if (anaType.EqualTo("TPCTPC")) {
+  if (anaType.EqualTo("TPCTPC") && (!fIsMC || !fUseTPCTruth)) {
     for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
       AliAODTrack* track = dynamic_cast<AliAODTrack*>(fInputEvent->GetTrack(iTrack));
+
+      // Require track to be existing and pass the track selection
+      if (!track) continue;
+
+      // Fill the QA plot before cuts
+      double fb = (fCurrSystFlag == 1) ? 768 : 96;
+      if (track->TestFilterBit(fb)) {
+        fPtTriDisBefore->Fill(track->Pt());
+        fPtAssDisBefore->Fill(track->Pt());
+        fEtaTriDisBefore->Fill(track->Eta());
+        fEtaAssDisBefore->Fill(track->Eta());
+        fPhiTriDisBefore->Fill(track->Phi());
+        fPhiAssDisBefore->Fill(track->Phi());
+      }
+
+      track->GetXYZ(pos);
+      if (!AcceptAODTrack(track, pos,vtxp)) continue;
+
+      Double_t pt = track->Pt();
+      // Only if we consider the TPC-TPC correlation, we use this
+      if (pt > fPtMinAss && pt < fPtMaxAss) {
+        // Mingrui Polarity ??
+        fTracksAss->Add(track);
+        fNofTracksAss++; // number of associate tracks in the event
+        // Fill the QA plot after cuts
+        double weight = 1;
+        if(fNUA == 1) weight = GetFlowWeightSystematics(track, fPVz, kRefs);
+        fPtAssDis->Fill(track->Pt()*weight);
+        fEtaAssDis->Fill(track->Eta()*weight);
+        fPhiAssDis->Fill(track->Phi()*weight);
+      }
+
+      if (pt > fPtMinTrig && pt < fPtMaxTrig) {
+        fTracksTrigCharged->Add(track);
+        fNofTracksTrig++; // number of trigger tracks in the event
+        fhTracksTrigCent->Fill(NtrksCounter, fPVz);
+        double weight = 1;
+        if(fNUA == 1) weight= GetFlowWeightSystematics(track, fPVz, kRefs);
+        fPtTriDis->Fill(track->Pt()*weight);
+        fEtaTriDis->Fill(track->Eta()*weight);
+        fPhiTriDis->Fill(track->Phi()*weight);
+      }
+    }
+  } else if (anaType.EqualTo("TPCFMD")) {
+    if (!fIsMC || !fUseTPCTruth) {
+      for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
+        AliAODTrack* track = dynamic_cast<AliAODTrack*>(fInputEvent->GetTrack(iTrack));
+
+        // Require track to be existing and pass the track selection
+        if (!track) continue;
+
+        fPtTriDisBefore->Fill(track->Pt());
+        fEtaTriDisBefore->Fill(track->Eta());
+        fPhiTriDisBefore->Fill(track->Phi());
+
+        track->GetXYZ(pos);
+        if (!AcceptAODTrack(track, pos,vtxp)) continue;
+
+        Double_t pt = track->Pt();
+
+        if (pt > fPtMinTrig && pt < fPtMaxTrig) {
+          fTracksTrigCharged->Add(track);
+          fPtTriDisBefore->Fill(track->Pt());
+          fEtaTriDisBefore->Fill(track->Eta());
+          fPhiTriDisBefore->Fill(track->Phi());
+          fNofTracksTrig++; // number of trigger tracks in the event
+          fhTracksTrigCent->Fill(NtrksCounter, fPVz);
+        }
+      }
+    }
+
+    if (!fIsMC || !fUseFMDTruth) {
+      AliAODForwardMult* aodForward = static_cast<AliAODForwardMult*>(fAOD->FindListObject("Forward"));
+      const TH2D& d2Ndetadphi = aodForward->GetHistogram();
+      int nEta = d2Ndetadphi.GetXaxis()->GetNbins();
+      int nPhi = d2Ndetadphi.GetYaxis()->GetNbins();
+
+
+      for (int iEta = 1; iEta <= nEta; iEta++) {
+        for (int iPhi = 1; iPhi <= nPhi; iPhi++) {
+
+
+          double eta = d2Ndetadphi.GetXaxis()->GetBinCenter(iEta); 
+          double phi = d2Ndetadphi.GetYaxis()->GetBinCenter(iPhi); 
+
+
+          double etaAccepted = false;
+          if ( fFMDAacceptanceCutLower < eta && eta < fFMDAacceptanceCutUpper) etaAccepted = true;
+          if ( fFMDCacceptanceCutLower < eta && eta < fFMDCacceptanceCutUpper) etaAccepted = true;
+          if (!etaAccepted) continue;
+
+          double mostProbableN = d2Ndetadphi.GetBinContent(iEta, iPhi);
+          if (mostProbableN > 0) {
+            fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN)); 
+            fEtaAssDis->Fill(eta, mostProbableN);
+            fPhiAssDis->Fill(phi, mostProbableN);
+          }
+        }
+      } 
+    }
+  } else if (anaType.EqualTo("FMDFMD") && (!fIsMC || !fUseFMDTruth)) {
+    AliAODForwardMult* aodForward = static_cast<AliAODForwardMult*>(fAOD->FindListObject("Forward"));
+    const TH2D& d2Ndetadphi = aodForward->GetHistogram();
+    int nEta = d2Ndetadphi.GetXaxis()->GetNbins();
+    int nPhi = d2Ndetadphi.GetYaxis()->GetNbins();
+
+    for (int iEta = 1; iEta <= nEta; iEta++) {
+      for (int iPhi = 1; iPhi <= nPhi; iPhi++) {
+        double eta = d2Ndetadphi.GetXaxis()->GetBinCenter(iEta);
+        double phi = d2Ndetadphi.GetYaxis()->GetBinCenter(iPhi);
+
+        double etaAccepted = false;
+        if ( fFMDAacceptanceCutLower < eta && eta < fFMDAacceptanceCutUpper) etaAccepted = true;
+        if ( fFMDCacceptanceCutLower < eta && eta < fFMDCacceptanceCutUpper) etaAccepted = true;
+        if (!etaAccepted) continue;
+
+        double mostProbableN = d2Ndetadphi.GetBinContent(iEta, iPhi);
+        if (mostProbableN > 0) {
+          if (eta > 0) {
+            fTracksTrigCharged->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN));
+            // Set the pt to 1.0
+            fhTracksTrigCent->Fill(NtrksCounter, fPVz, mostProbableN);
+            fEtaTriDis->Fill(eta, mostProbableN);
+            fPhiTriDis->Fill(phi, mostProbableN);
+          } else {
+            fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN));
+            fEtaAssDis->Fill(eta, mostProbableN);
+            fPhiAssDis->Fill(phi, mostProbableN);
+          }
+        }
+      } // end loop phi
+    } // end loop eta
+  }
+  return kTRUE;
+}
+
+Bool_t AliAnalysisTaskCorrForNonlinearFlow::PrepareTPCFMDTracksMCTruth() {
+
+  AliMCEvent* mcEvent = dynamic_cast<AliMCEvent*>(MCEvent());
+  if(!mcEvent) return kFALSE;
+
+  Int_t nTracks = mcEvent->GetNumberOfTracks();
+
+  fTracksTrigCharged = new TObjArray;
+  fTracksAss = new TObjArray;
+
+  // TPC-TPC
+  int fNofTracksAss = 0;
+  int fNofTracksTrig = 0;
+
+  if (anaType.EqualTo("TPCTPC") && fUseTPCTruth) {
+    for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
+      AliAODMCParticle* track = (AliAODMCParticle*)mcEvent->GetTrack(iTrack);
 
       // Require track to be existing and pass the track selection
       if (!track) continue;
@@ -1235,8 +1395,9 @@ Bool_t AliAnalysisTaskCorrForNonlinearFlow::PrepareTPCFMDTracks() {
       fPhiTriDisBefore->Fill(track->Phi());
       fPhiAssDisBefore->Fill(track->Phi());
 
-      track->GetXYZ(pos);
-      if (!AcceptAODTrack(track, pos,vtxp)) continue;
+      if (!AcceptMCTruthTrack(track)) continue;
+      // Make sure it is in the TPC region
+      if (track->Eta() < -0.8 || track->Eta() > 0.8) continue;
 
       Double_t pt = track->Pt();
       // Only if we consider the TPC-TPC correlation, we use this
@@ -1260,96 +1421,87 @@ Bool_t AliAnalysisTaskCorrForNonlinearFlow::PrepareTPCFMDTracks() {
       }
     }
   } else if (anaType.EqualTo("TPCFMD")) {
-    for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
-      AliAODTrack* track = dynamic_cast<AliAODTrack*>(fInputEvent->GetTrack(iTrack));
+    if (fUseTPCTruth) {
+      for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
 
-      // Require track to be existing and pass the track selection
-      if (!track) continue;
+        AliAODMCParticle* track = (AliAODMCParticle*)mcEvent->GetTrack(iTrack);
+        if (!AcceptMCTruthTrack(track)) continue;
+        // Make sure it is in the TPC region
+        if (track->Eta() < -0.8 || track->Eta() > 0.8) continue;
 
-      fPtTriDisBefore->Fill(track->Pt());
-      fEtaTriDisBefore->Fill(track->Eta());
-      fPhiTriDisBefore->Fill(track->Phi());
+        // Require track to be existing and pass the track selection
+        if (!track) continue;
 
-      track->GetXYZ(pos);
-      if (!AcceptAODTrack(track, pos,vtxp)) continue;
-
-      Double_t pt = track->Pt();
-
-      if (pt > fPtMinTrig && pt < fPtMaxTrig) {
-        fTracksTrigCharged->Add(track);
         fPtTriDisBefore->Fill(track->Pt());
         fEtaTriDisBefore->Fill(track->Eta());
         fPhiTriDisBefore->Fill(track->Phi());
-        fNofTracksTrig++; // number of trigger tracks in the event
-        fhTracksTrigCent->Fill(NtrksCounter, fPVz);
+
+        Double_t pt = track->Pt();
+
+        if (pt > fPtMinTrig && pt < fPtMaxTrig) {
+          fTracksTrigCharged->Add(track);
+          fPtTriDisBefore->Fill(track->Pt());
+          fEtaTriDisBefore->Fill(track->Eta());
+          fPhiTriDisBefore->Fill(track->Phi());
+          fNofTracksTrig++; // number of trigger tracks in the event
+          fhTracksTrigCent->Fill(NtrksCounter, fPVz);
+        }
       }
     }
+    if (fUseFMDTruth) {
+      for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
 
-    AliAODForwardMult* aodForward = static_cast<AliAODForwardMult*>(fAOD->FindListObject("Forward"));
-    const TH2D& d2Ndetadphi = aodForward->GetHistogram();
-    int nEta = d2Ndetadphi.GetXaxis()->GetNbins();
-    int nPhi = d2Ndetadphi.GetYaxis()->GetNbins();
+        AliAODMCParticle* track = (AliAODMCParticle*)mcEvent->GetTrack(iTrack);
+        // Require track to be existing and pass the track selection
+        if (!track) continue;
 
+        if (!AcceptMCTruthTrack(track)) continue;
 
-    for (int iEta = 1; iEta <= nEta; iEta++) {
-      for (int iPhi = 1; iPhi <= nPhi; iPhi++) {
-
-
-        double eta = d2Ndetadphi.GetXaxis()->GetBinCenter(iEta); 
-        double phi = d2Ndetadphi.GetYaxis()->GetBinCenter(iPhi); 
-
-
+        double eta = track->Eta();
+        double phi = track->Phi();
         double etaAccepted = false;
         if ( fFMDAacceptanceCutLower < eta && eta < fFMDAacceptanceCutUpper) etaAccepted = true;
         if ( fFMDCacceptanceCutLower < eta && eta < fFMDCacceptanceCutUpper) etaAccepted = true;
         if (!etaAccepted) continue;
 
-        double mostProbableN = d2Ndetadphi.GetBinContent(iEta, iPhi);
-        if (mostProbableN > 0) {
-          fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN)); 
-          fEtaAssDis->Fill(eta, mostProbableN);
-          fPhiAssDis->Fill(phi, mostProbableN);
-        }
+        fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, 1)); 
+        fEtaAssDis->Fill(eta, 1);
+        fPhiAssDis->Fill(phi, 1);
       }
-    } 
-  } else if (anaType.EqualTo("FMDFMD")) {
+    }
+  } else if (anaType.EqualTo("FMDFMD") && fUseFMDTruth) {
+    for (Int_t iTrack = 0; iTrack < nTracks; iTrack++) {
 
-    AliAODForwardMult* aodForward = static_cast<AliAODForwardMult*>(fAOD->FindListObject("Forward"));
-    const TH2D& d2Ndetadphi = aodForward->GetHistogram();
-    int nEta = d2Ndetadphi.GetXaxis()->GetNbins();
-    int nPhi = d2Ndetadphi.GetYaxis()->GetNbins();
+      AliAODMCParticle* track = (AliAODMCParticle*)mcEvent->GetTrack(iTrack);
+      // Require track to be existing and pass the track selection
+      if (!track) continue;
 
-    for (int iEta = 1; iEta <= nEta; iEta++) {
-      for (int iPhi = 1; iPhi <= nPhi; iPhi++) {
-        double eta = d2Ndetadphi.GetXaxis()->GetBinCenter(iEta); 
-        double phi = d2Ndetadphi.GetYaxis()->GetBinCenter(iPhi); 
+      if (!AcceptMCTruthTrack(track)) continue;
+      // Make sure it is in the TPC region
 
-        double etaAccepted = false;
-        if ( fFMDAacceptanceCutLower < eta && eta < fFMDAacceptanceCutUpper) etaAccepted = true;
-        if ( fFMDCacceptanceCutLower < eta && eta < fFMDCacceptanceCutUpper) etaAccepted = true;
-        if (!etaAccepted) continue;
+      double eta = track->Eta();
+      double phi = track->Phi();
+      double etaAccepted = false;
+      if ( fFMDAacceptanceCutLower < eta && eta < fFMDAacceptanceCutUpper) etaAccepted = true;
+      if ( fFMDCacceptanceCutLower < eta && eta < fFMDCacceptanceCutUpper) etaAccepted = true;
+      if (!etaAccepted) continue;
 
-        double mostProbableN = d2Ndetadphi.GetBinContent(iEta, iPhi);
-        if (mostProbableN > 0) {
-          if (eta > 0) {
-            fTracksTrigCharged->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN)); 
-            // Set the pt to 1.0
-            fhTracksTrigCent->Fill(NtrksCounter, fPVz, mostProbableN);
-            fEtaTriDis->Fill(eta, mostProbableN);
-            fPhiTriDis->Fill(phi, mostProbableN);
-          } else {
-            fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, mostProbableN)); 
-            fEtaAssDis->Fill(eta, mostProbableN);
-            fPhiAssDis->Fill(phi, mostProbableN);
-          }
-        }
-      } // end loop phi
-    } // end loop eta
+      if (eta > 0) {
+        fTracksTrigCharged->Add(new AliPartSimpleForCorr(eta, phi, 1)); 
+        // Set the pt to 1.0
+        fhTracksTrigCent->Fill(NtrksCounter, fPVz, 1);
+        fEtaTriDis->Fill(eta, 1);
+        fPhiTriDis->Fill(phi, 1);
+      } else {
+        fTracksAss->Add(new AliPartSimpleForCorr(eta, phi, 1)); 
+        fEtaAssDis->Fill(eta, 1);
+        fPhiAssDis->Fill(phi, 1);
+      }
+    }
   }
-
-
   return kTRUE;
 }
+
 
 Bool_t AliAnalysisTaskCorrForNonlinearFlow::AcceptAODTrack(AliAODTrack *mtr, Double_t *ltrackXYZ, Double_t *vtxp) {
   // Pt cut
@@ -1387,7 +1539,9 @@ Bool_t AliAnalysisTaskCorrForNonlinearFlow::AcceptAOD(AliAODEvent *inEv) {
       fPeriod.EqualTo("LHC16ZM") ||
       fPeriod.EqualTo("LHC17ZM") ||
       fPeriod.EqualTo("LHC18ZM") ) {
-    fEventCuts.OverrideAutomaticTriggerSelection(AliVEvent::kHighMultV0, true);
+    if (fTrigger == 1) {
+      fEventCuts.OverrideAutomaticTriggerSelection(AliVEvent::kHighMultV0, true);
+    }
   }
 
 
@@ -1484,6 +1638,20 @@ Bool_t AliAnalysisTaskCorrForNonlinearFlow::AcceptAOD(AliAODEvent *inEv) {
 
   return kTRUE;
 }
+
+Bool_t AliAnalysisTaskCorrForNonlinearFlow::AcceptMCTruthTrack(AliAODMCParticle *mtrk) {
+  // Pt cut
+  if(mtrk->Pt() < fMinPt) return kFALSE;
+  if(mtrk->Pt() > fMaxPt) return kFALSE;
+
+  if(TMath::Abs(mtrk->Eta()) > fEtaCut) return kFALSE;
+
+  if (!(mtrk->IsPhysicalPrimary())) return kFALSE;
+  if (mtrk->Charge() == 0) return kFALSE;
+  return kTRUE;
+}
+
+
 
 Bool_t AliAnalysisTaskCorrForNonlinearFlow::LoadWeightsSystematics() {
   hWeight2D = (TH2D*)fFlowWeightsList->FindObject("hNUA");
@@ -1604,57 +1772,10 @@ Double_t AliAnalysisTaskCorrForNonlinearFlow::GetFlowWeightSystematics(const Ali
   int nEta = hWeight2D->GetXaxis()->FindBin(dEta);
   int nPhi = hWeight2D->GetYaxis()->FindBin(dPhi);
   dWeight = hWeight2D->GetBinContent(nEta,nPhi);
+  // cout << nEta << " " << nPhi << " " << dWeight << endl;
   return dWeight;
 }
 
-Bool_t AliAnalysisTaskCorrForNonlinearFlow::LoadWeights() {
-  // (Re-) Loading of flow vector weights
-  // ***************************************************************************
-  if(!fFlowWeightsList) { AliError("Flow weights list not found! Terminating!"); return kFALSE; }
-
-  TList* listFlowWeights = nullptr;
-
-  TString fFlowWeightsTag = "";
-  if(!fFlowWeightsTag.IsNull()) {
-    // using weights Tag if provided (systematics)
-    listFlowWeights = (TList*) fFlowWeightsList->FindObject(fFlowWeightsTag.Data());
-    if(!listFlowWeights) { AliError(Form("TList with tag '%s' not found!",fFlowWeightsTag.Data())); fFlowWeightsList->ls(); return kFALSE; }
-  } else {
-    if(!fFlowRunByRunWeights && !fFlowPeriodWeights) {
-      // loading run-averaged weights
-      listFlowWeights = (TList*) fFlowWeightsList->FindObject("averaged");
-      if(!listFlowWeights) { AliError("TList with flow run-averaged weights not found."); fFlowWeightsList->ls(); return kFALSE; }
-    } else if(fFlowPeriodWeights){
-      // loading period-specific weights
-      listFlowWeights = (TList*) fFlowWeightsList->FindObject(ReturnPPperiod(fAOD->GetRunNumber()));
-      if(!listFlowWeights) { AliError("Loading period weights failed!"); fFlowWeightsList->ls(); return kFALSE; }
-    }
-    else {
-      // loading run-specific weights
-      listFlowWeights = (TList*) fFlowWeightsList->FindObject(Form("%d",fAOD->GetRunNumber()));
-
-      if(!listFlowWeights) {
-        // run-specific weights not found for this run; loading run-averaged instead
-        AliWarning(Form("TList with flow weights (run %d) not found. Using run-averaged weights instead (as a back-up)", fAOD->GetRunNumber()));
-        listFlowWeights = (TList*) fFlowWeightsList->FindObject("averaged");
-        if(!listFlowWeights) { AliError("Loading run-averaged weights failed!"); fFlowWeightsList->ls(); return kFALSE; }
-      }
-    }
-  }
-
-
-  for(Int_t iSpec(0); iSpec <= kRefs; ++iSpec) {
-    if(fFlowUse3Dweights) {
-      fh3Weights[iSpec] = (TH3D*) listFlowWeights->FindObject(Form("%s3D",GetSpeciesName(PartSpecies(iSpec))));
-      if(!fh3Weights[iSpec]) { AliError(Form("Weight 3D (%s) not found",GetSpeciesName(PartSpecies(iSpec)))); return kFALSE; }
-    } else {
-      fh2Weights[iSpec] = (TH2D*) listFlowWeights->FindObject(GetSpeciesName(PartSpecies(iSpec)));
-      if(!fh2Weights[iSpec]) { AliError(Form("Weight 2D (%s) not found",GetSpeciesName(PartSpecies(iSpec)))); return kFALSE; }
-    }
-  }
-
-  return kTRUE;
-}
 
 Double_t AliAnalysisTaskCorrForNonlinearFlow::GetFlowWeight(const AliVParticle* track, double fVtxZ, const PartSpecies species) {
   // if not applying for reconstructed
@@ -1804,3 +1925,48 @@ double AliAnalysisTaskCorrForNonlinearFlow::GetWeight(double phi, double eta, do
   return weight;
 }
 
+const char* AliAnalysisTaskCorrForNonlinearFlow::ReturnPPperiodMC(const Int_t runNumber) const
+{
+  if(runNumber >= 252235 && runNumber <= 264347){ // LHC16
+    if(runNumber >= 252235 && runNumber <= 252375) return "17f6";
+    if(runNumber >= 253437 && runNumber <= 253591) return "17f9";
+    if(runNumber >= 254128 && runNumber <= 254332) return "17d17";
+    if(runNumber >= 254604 && runNumber <= 255467) return "17f5";
+    if(runNumber >= 255539 && runNumber <= 255618) return "17d3";
+    if(runNumber >= 256219 && runNumber <= 256418) return "17e5";
+    if(runNumber >= 256941 && runNumber <= 258537) return "18f1";
+    if(runNumber >= 258962 && runNumber <= 259888) return "18d8";
+    if(runNumber >= 262424 && runNumber <= 264035) return "17d16";
+    if(runNumber >= 264076 && runNumber <= 264347) return "17d18";
+  }
+
+  if(runNumber >= 270581 && runNumber <= 282704){ // LHC17
+    if(runNumber >= 270581 && runNumber <= 270667) return "18d3";
+    if(runNumber >= 270822 && runNumber <= 270830) return "17h1";
+    if(runNumber >= 270854 && runNumber <= 270865) return "18d3";
+    if(runNumber >= 271870 && runNumber <= 273103) return "18c12";
+    if(runNumber >= 273591 && runNumber <= 274442) return "17k4";
+    if(runNumber >= 274593 && runNumber <= 274671) return "17h11";
+    if(runNumber >= 274690 && runNumber <= 276508) return "18c13";
+    if(runNumber >= 276551 && runNumber <= 278216) return "18a8";
+    if(runNumber >= 278914 && runNumber <= 280140) return "17l5";
+    if(runNumber >= 280282 && runNumber <= 281961) return "18a9";
+    if(runNumber >= 282528 && runNumber <= 282704) return "18a1";
+  }
+
+  if(runNumber >= 285009 && runNumber <= 294925){ // LHC18
+    if(runNumber >= 285009 && runNumber <= 285396) return "18g4";
+    if(runNumber >= 285978 && runNumber <= 286350) return "18g5";
+    if(runNumber >= 286380 && runNumber <= 286937) return "18g6";
+    if(runNumber >= 287000 && runNumber <= 287658) return "18h2";
+    if(runNumber >= 288619 && runNumber <= 289201) return "18h4"; //g,h,i,j,k
+    if(runNumber >= 289240 && runNumber <= 289971) return "18j1";
+    if(runNumber >= 290323 && runNumber <= 292839) return "18j4";
+    if(runNumber >= 293357 && runNumber <= 293359) return "18k1";
+    if(runNumber >= 293475 && runNumber <= 293898) return "18k2";
+    if(runNumber >= 294009 && runNumber <= 294925) return "18k3";
+  }
+
+  AliWarning("PP period identifier was called and based on the run number did not pick up the correct efficiency. Setting up efficiencies from LHC18j4.");
+  return "18j4";
+}

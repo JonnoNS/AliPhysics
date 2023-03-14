@@ -1,7 +1,7 @@
 #ifndef ALIANALYSISTASKRAWJETWITHEP_H
 #define ALIANALYSISTASKRAWJETWITHEP_H
 // ******************************************************************************************
-// \class AliAnalysisTaskRawJetWithEP
+// \class AliAnalysisTaskRawJetWithEP_1
 // \brief task used to load the Qn calibrations and get the calibrated Qn vectors for JE analyses
 // \authors:
 // T. Kumaoka, takuya.kumaoka@cern.ch
@@ -57,7 +57,7 @@ public:
     };
     
   enum DetFlev{
-      kFullTPC,         ///< use all TPC Qn Vector
+      kFullTPC,         ///< use all T54PC Qn Vector
       kPosTPC,          ///< use positive eta TPC Qn Vector
       kNegTPC,          ///< use negative eta TPC Qn Vector
       kFullV0,          ///< use A and C V0 Qn Vector
@@ -114,6 +114,7 @@ public:
 
 
   //== s == Setter Prepare  ################################################
+  void SetMessageLevel(Int_t mesLev) {fMesLev = mesLev;}
   void SetRunListFileName(std::string fileName) {fRunListFileName = fileName;}
   
   void SetUseAliEventCuts(Bool_t b)      { fUseAliEventCuts = b; }
@@ -131,6 +132,7 @@ public:
   void SetQnCalibType(TString iQnVCalibType){fQnVCalibType = iQnVCalibType;}
   void SetTPCQnMeasure(Bool_t bTPCQnMeasure){fTPCQnMeasure = bTPCQnMeasure;}
 
+  void SetOwnEventCut(Bool_t bOwnEventCut){fOwnEventCut = bOwnEventCut;}
   void SetDoEP(Bool_t bDoEP){fDoEP = bDoEP;}
   void SetDoTrack(Bool_t bDoTrack){fDoTrack = bDoTrack;}
   void SetDoBkg(Bool_t bDoBkg){fDoBkg = bDoBkg;}
@@ -222,6 +224,8 @@ private:
     AliAODEvent* fAOD;                /// AOD event
     TString fOADBFileName;            /// OADB input file name
     
+    Int_t   fMesLev = 0;              ///<
+
     Bool_t  fPileupCut = kFALSE;      ///<
     Bool_t  fTPCQnMeasure = kFALSE;   ///<
     
@@ -230,6 +234,7 @@ private:
     Bool_t  fGainCalibQA = kFALSE;    ///<
     Bool_t  fReCentCalibQA = kFALSE;  ///<
 
+    Bool_t  fOwnEventCut = kFALSE;    ///<
     Bool_t  fDoEP = kFALSE;           ///<
     Bool_t  fDoTrack = kFALSE;        ///<
     Bool_t  fDoBkg = kFALSE;          ///<
@@ -268,8 +273,8 @@ private:
     
     void       MeasureTpcEPQA();
     
-    Bool_t     MeasureBkg();
-    void       BkgFitEvaluation(TH1F* hBkgTracks, TF1* fFitModulation);
+    Bool_t     MeasureBkg(Double_t baseJetRho);
+    void       BkgFitEvaluation(Double_t baseJetRho, TH1F* hBkgTracks, TF1* fFitModulation);
     
     Bool_t     DoEventPlane();
     void       DoJetLoop();
@@ -278,6 +283,7 @@ private:
     Bool_t     QnJEHandlarEPGet();
     Bool_t     QnGainCalibration();
     Bool_t     QnRecenteringCalibration();
+    Bool_t     QnCalcWOCalib();
 
     Double_t CalcEPAngle(double Qx,double Qy) const {return (TMath::Pi()+TMath::ATan2(-Qy,-Qx))/2;}
     Double_t CalcEPReso(Int_t n, Double_t &psiA, Double_t &psiB, Double_t &psiC);
@@ -331,9 +337,10 @@ private:
     // TF1   *fMultCutPU;      //!<!
     // TF1   *fCenCutLowPU;    //!<!
     // TF1   *fCenCutHighPU;   //!<!
-
+    
     Double_t V0Mult2[3];    /// For q2 V0 0:combin, 1:eta negative (C side), 2:eta positive (A side)
     Double_t V0Mult3[3];    /// For q3 V0 0:combin, 1:eta negative (C side), 2:eta positive (A side)
+    Double_t V0MultForAngle[8];    /// Multiplicity for 8 region
     
     //qnVector 0:x, 1:y
     Double_t q2VecV0M[2];   ///< Q2 V0 C+A vector(x,y)
@@ -401,7 +408,7 @@ private:
     
 
     short GetVertexZbin() const;
-    short GetCentBin() const;
+    Int_t GetCentBin();
     bool OpenInfoCalbration();
 
     bool IsTrackSelected(AliAODTrack* track);
@@ -479,8 +486,8 @@ private:
 
     bool fV0CalibZvtxDiff;       //< flag to properly manage Zvtx differential V0 calibrations
 
-    TH1D* fWeightsTPCPosEta[9];  ///< Weights for TPC tracks with eta > 0
-    TH1D* fWeightsTPCNegEta[9];  ///< Weights for TPC tracks with eta < 0
+    TH1D* fWeightsTPCPosEta[10];  ///< Weights for TPC tracks with eta > 0
+    TH1D* fWeightsTPCNegEta[10];  ///< Weights for TPC tracks with eta < 0
     bool fEnablePhiDistrHistos;  ///< Enable phi distribution histos
     TH2F* fPhiVsCentrTPC[2];     ///< Phi vs. centr TH2 of selected TPC tracks in eta>0 and eta<0
     
@@ -490,12 +497,10 @@ private:
     AliAnalysisTaskRawJetWithEP(const AliAnalysisTaskRawJetWithEP&); // not implemented
     AliAnalysisTaskRawJetWithEP &operator=(const AliAnalysisTaskRawJetWithEP&);
 
-    ClassDef(AliAnalysisTaskRawJetWithEP, 135);
+    ClassDef(AliAnalysisTaskRawJetWithEP, 138);
 };
 
 #endif
-
-
 
 
 
