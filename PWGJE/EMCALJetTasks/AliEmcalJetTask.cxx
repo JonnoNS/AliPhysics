@@ -1329,6 +1329,7 @@ AliEmcalJetTask* AliEmcalJetTask::AddTaskEmcalJet(
 
   mgr->AddTask(jetTask);
 
+  Printf("Succesfully added task %s", jetTask->GetName());
   // Create containers for input/output
   AliAnalysisDataContainer* cinput = mgr->GetCommonInputContainer();
   mgr->ConnectInput(jetTask, 0, cinput);

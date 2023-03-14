@@ -52,18 +52,23 @@ void AddTask_MesonJetCorr_Conv(
   Bool_t enableChargedPrimary = kFALSE,
   bool doFillMesonDCATree = false, // swith to enable filling the meson DCA tree for pile-up estimation
   // subwagon config
-  TString additionalTrainConfig = "0" // additional counter for trainconfig + special settings
+  TString additionalTrainConfig = "2" // additional counter for trainconfig + special settings
 )
 {
 
-  AliCutHandlerPCM cuts(13);
+  int localDebug = 1;
 
+  AliCutHandlerPCM cuts(13);
+  cout << "INFO: in AddTask_MesonJetCorr_Conv: " << "additionalTrainConfig is: " << additionalTrainConfig << endl;
   TString addTaskName = "AddTask_MesonJetCorr_Conv";
   TString sAdditionalTrainConfig = cuts.GetSpecialSettingFromAddConfig(additionalTrainConfig, "", "", addTaskName);
+  cout << "INFO: in AddTask_MesonJetCorr_Conv: sAdditionalTrainConfig is: " << sAdditionalTrainConfig.Data() << endl;
   if (sAdditionalTrainConfig.Atoi() > 0) {
     trainConfig = trainConfig + sAdditionalTrainConfig.Atoi();
+    cout << "INFO: in AddTask_MesonJetCorr_Conv: " << "trainConfig is: " << trainConfig << endl;
     cout << "INFO: " << addTaskName.Data() << " running additionalTrainConfig '" << sAdditionalTrainConfig.Atoi() << "', train config: '" << trainConfig << "'" << endl;
   }
+  cout << "INFO: in AddTask_MesonJetCorr_Conv: trainConfig is: " << trainConfig << endl;
 
   TString fileNamePtWeights = cuts.GetSpecialFileNameFromString(fileNameExternalInputs, "FPTW:");
   TString fileNameMultWeights = cuts.GetSpecialFileNameFromString(fileNameExternalInputs, "FMUW:");
@@ -172,7 +177,7 @@ void AddTask_MesonJetCorr_Conv(
   task->SetIsMC(isMC);
   task->SetV0ReaderName(V0ReaderName);
   task->SetTrackMatcherRunningMode(trackMatcherRunningMode); // have to do this!
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   //---------------------------------------
   // configs for pi0 meson pp 13 TeV
   //---------------------------------------
@@ -194,7 +199,7 @@ void AddTask_MesonJetCorr_Conv(
     //---------------------------------------
     // configs for eta meson pp 13 TeV
     //---------------------------------------
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   } else if (trainConfig == 1002) {
     cuts.AddCutPCM("00010103", "0dm00009f9730000dge0474000", "2r52103l00000000"); // in-Jet mass cut around eta: 0.5-0.6, rotation back
   } else if (trainConfig == 1003) {
@@ -204,7 +209,7 @@ void AddTask_MesonJetCorr_Conv(
     Error(Form("MesonJetCorrelation_%i", trainConfig), "wrong trainConfig variable no cuts have been specified for the configuration");
     return;
   }
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   if (!cuts.AreValid()) {
     cout << "\n\n****************************************************" << endl;
     cout << "ERROR: No valid cuts stored in CutHandlerCalo! Returning..." << endl;
@@ -212,22 +217,22 @@ void AddTask_MesonJetCorr_Conv(
          << endl;
     return;
   }
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   Int_t numberOfCuts = cuts.GetNCuts();
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   TList* EventCutList = new TList();
   TList* ConvCutList = new TList();
   TList* MesonCutList = new TList();
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   EventCutList->SetOwner(kTRUE);
   AliConvEventCuts** analysisEventCuts = new AliConvEventCuts*[numberOfCuts];
   ConvCutList->SetOwner(kTRUE);
   AliConversionPhotonCuts** analysisConvCuts = new AliConversionPhotonCuts*[numberOfCuts];
   MesonCutList->SetOwner(kTRUE);
   AliConversionMesonCuts** analysisMesonCuts = new AliConversionMesonCuts*[numberOfCuts];
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   for (Int_t i = 0; i < numberOfCuts; i++) {
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     //---------------------------------------------------------//
     //------------------------ Event Cuts ---------------------//
     //---------------------------------------------------------//
@@ -252,6 +257,7 @@ void AddTask_MesonJetCorr_Conv(
       analysisEventCuts[i]->SetUseAdditionalOutlierRejection(kTRUE);
     if (periodNameV0Reader.CompareTo("") != 0)
       analysisEventCuts[i]->SetPeriodEnum(periodNameV0Reader);
+      if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     analysisEventCuts[i]->InitializeCutsFromCutString((cuts.GetEventCut(i)).Data());
     analysisEventCuts[i]->SetFillCutHistograms("", kFALSE);
     EventCutList->Add(analysisEventCuts[i]);
@@ -262,7 +268,9 @@ void AddTask_MesonJetCorr_Conv(
     analysisConvCuts[i] = new AliConversionPhotonCuts();
 
     if (enableMatBudWeightsPi0 > 0){
+      if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
       if (isMC > 0){
+        if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
         if (!analysisConvCuts[i]->InitializeMaterialBudgetWeights(enableMatBudWeightsPi0,fileNameMatBudWeights)){
           cout << "ERROR The initialization of the materialBudgetWeights did not work out." << endl;
           enableMatBudWeightsPi0 = false;
@@ -274,19 +282,25 @@ void AddTask_MesonJetCorr_Conv(
 
     analysisConvCuts[i]->SetV0ReaderName(V0ReaderName);
     if (enableElecDeDxPostCalibration) {
+      if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
       if (isMC == 0) {
+        if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
         if (fileNamedEdxPostCalib.CompareTo("") != 0) {
           analysisConvCuts[i]->SetElecDeDxPostCalibrationCustomFile(fileNamedEdxPostCalib);
           cout << "Setting custom dEdx recalibration file: " << fileNamedEdxPostCalib.Data() << endl;
+          if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
         }
         analysisConvCuts[i]->SetDoElecDeDxPostCalibration(enableElecDeDxPostCalibration);
         cout << "Enabled TPC dEdx recalibration." << endl;
+        if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
       } else {
+        if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
         cout << "ERROR enableElecDeDxPostCalibration set to True even if MC file. Automatically reset to 0" << endl;
         enableElecDeDxPostCalibration = kFALSE;
         analysisConvCuts[i]->SetDoElecDeDxPostCalibration(kFALSE);
       }
     }
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     if (enableLightOutput == 1 || enableLightOutput == 2 || enableLightOutput == 5)
       analysisConvCuts[i]->SetLightOutput(1);
     if (enableLightOutput == 4)
@@ -297,19 +311,27 @@ void AddTask_MesonJetCorr_Conv(
     analysisConvCuts[i]->SetIsHeavyIon(isHeavyIon);
     analysisConvCuts[i]->SetFillCutHistograms("", kFALSE);
     ConvCutList->Add(analysisConvCuts[i]);
-
+if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     //---------------------------------------------------------//
     //------------------------ Meson Cuts ---------------------//
     //---------------------------------------------------------//
     analysisMesonCuts[i] = new AliConversionMesonCuts();
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     analysisMesonCuts[i]->InitializeCutsFromCutString((cuts.GetMesonCut(i)).Data());
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     analysisMesonCuts[i]->SetFillCutHistograms("");
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     // analysisEventCuts[i]->SetAcceptedHeader(HeaderList);
-    if (enableLightOutput > 0)
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
+    if (enableLightOutput > 0){
+      if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
       analysisMesonCuts[i]->SetLightOutput(kTRUE);
+    }
+    if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
     MesonCutList->Add(analysisMesonCuts[i]);
   }
-
+  if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
+  cout << "Now setting meson kind: " << meson << endl;
   task->SetMesonKind(meson);
   task->SetIsConv(true);
   task->SetJetContainerAddName(nameJetFinder);

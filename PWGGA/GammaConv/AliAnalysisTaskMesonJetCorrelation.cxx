@@ -535,10 +535,18 @@ void AliAnalysisTaskMesonJetCorrelation::UserCreateOutputObjects()
   // Initialize V0 reader
   fV0Reader = (AliV0ReaderV1*)AliAnalysisManager::GetAnalysisManager()->GetTask(fV0ReaderName.Data());
   if (!fV0Reader) {
-    printf("Error: No V0 Reader");
+    printf("Error: No V0 Reader\n");
     return;
   } // GetV0Reader
 
+  // Initialize Jet reader
+  if (strcmp(fAddNameConvJet.Data(), "")) printf("fAddNameConvJet is empty\n\n");
+  else printf("fAddNameConvJet is not empty: %s\n", fAddNameConvJet.Data());
+
+  if (strcmp(fAddNameConvJet.Data(), " ")) printf("fAddNameConvJet is just a space\n");
+  else printf("fAddNameConvJet is not just a space: %s\n", fAddNameConvJet.Data());
+
+  printf("AliAnalysisTaskMesonJetCorrelation::UserCreateOutputObjects() - fAddNameConvJet = %s\n", fAddNameConvJet.Data());
   fConvJetReader = (AliAnalysisTaskConvJet*)AliAnalysisManager::GetAnalysisManager()->GetTask(Form("AliAnalysisTaskConvJet%s", fAddNameConvJet.EqualTo("") == true ? "" : Form("_%s",fAddNameConvJet.Data())));
   if (!fConvJetReader) {
     printf(Form("ERROR: No AliAnalysisTaskConvJet%s\n", fAddNameConvJet.EqualTo("") == true ? "" : Form("_%s",fAddNameConvJet.Data())));
@@ -1617,7 +1625,7 @@ void AliAnalysisTaskMesonJetCorrelation::InitJets()
       phi -= TMath::Pi();
     }
   }
-cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
+
   if (fIsMC > 0) {
     if (fIsMC) {
       if (!fAODMCTrackArray)
@@ -1633,7 +1641,6 @@ cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
     fTrueVectorJetPartonID = fConvJetReader->GetTrueVectorJetParton();
     fTrueVectorJetPartonPt = fConvJetReader->GetTrueVectorJetPartonPt();
   }
-  cout<<"AliAnalysisTaskMesonJetCorrelation::InitJets() Line: "<< __LINE__ <<endl;
 }
 
 //________________________________________________________________________
@@ -1872,6 +1879,7 @@ void AliAnalysisTaskMesonJetCorrelation::UserExec(Option_t*)
     if (fIsConvCalo || fIsCalo) {
       if(fLocalDebugFlag) {printf("ProcessClusters\n");}
       ProcessClusters(); // process calo clusters
+      if(fLocalDebugFlag) {printf("ProcessClusters done\n");}
     }
     if (fIsConvCalo || fIsConv) {
       if(fLocalDebugFlag) {printf("ProcessPhotonCandidates\n");}
@@ -1902,14 +1910,16 @@ void AliAnalysisTaskMesonJetCorrelation::UserExec(Option_t*)
 void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
 {
   // cout << "in Process clusters" << endl;
-
+  int localDebug = 0;
   // clear cluster candidates
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
   for (unsigned int i = 0; i < fClusterCandidates.size(); ++i) {
     if (fClusterCandidates[i])
       delete fClusterCandidates[i];
     fClusterCandidates[i] = nullptr;
   }
   fClusterCandidates.clear();
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
 
   int nclus = 0;
   TClonesArray* arrClustersProcess = NULL;
@@ -1924,16 +1934,23 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
     nclus = arrClustersProcess->GetEntries();
   }
 
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
+
   if (nclus == 0)
     return;
   int NClusinJets = 0;
 
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
+
   // match tracks to clusters
   ((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->MatchTracksToClusters(fInputEvent, fWeightJetJetMC, kTRUE, fMCEvent);
+
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
 
   for (Long_t i = 0; i < nclus; i++) {
     Double_t tempClusterWeight = fWeightJetJetMC;
     // Double_t tempPhotonWeight = fWeightJetJetMC;
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     AliVCluster* clus = NULL;
     if (fInputEvent->IsA() == AliESDEvent::Class()) {
       if (arrClustersProcess)
@@ -1948,32 +1965,32 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
     }
     if (!clus)
       continue;
-
+   if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // Set the jetjet weight to 1 in case the cluster orignated from the minimum bias header
     if (fIsMC > 0 && ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetSignalRejection() == 4) {
       if (((AliConvEventCuts*)fEventCutArray->At(fiCut))->IsParticleFromBGEvent(clus->GetLabelAt(0), fMCEvent, fInputEvent) == 2) {
         tempClusterWeight = 1;
       }
     }
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // apply cluster cuts
     if (!((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->ClusterIsSelected(clus, fInputEvent, fMCEvent, fIsMC, tempClusterWeight, i)) {
       // if (((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->GetIsAcceptedForBasicCounting())fNCurrentClusterBasic++;
       delete clus;
       continue;
     }
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // vertex
     Double_t vertex[3] = {0};
     InputEvent()->GetPrimaryVertex()->GetXYZ(vertex);
-
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // TLorentzvector with cluster
     TLorentzVector clusterVector;
     clus->GetMomentum(clusterVector, vertex);
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     TLorentzVector* tmpvec = new TLorentzVector();
     tmpvec->SetPxPyPzE(clusterVector.Px(), clusterVector.Py(), clusterVector.Pz(), clusterVector.E());
-
+     if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // convert to AODConversionPhoton
     AliAODConversionPhoton* PhotonCandidate = new AliAODConversionPhoton(tmpvec);
     if (!PhotonCandidate) {
@@ -1981,32 +1998,36 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
       delete tmpvec;
       continue;
     }
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     // Flag Photon as CaloPhoton
     PhotonCandidate->SetIsCaloPhoton(((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->GetClusterType());
     PhotonCandidate->SetCaloClusterRef(i);
     PhotonCandidate->SetLeadingCellID(((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->FindLargestCellInCluster(clus, fInputEvent));
     // get MC label
     if (fIsMC > 0) {
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       int* mclabelsCluster = clus->GetLabels();
       PhotonCandidate->SetNCaloPhotonMCLabels(clus->GetNLabels());
       if (clus->GetNLabels() > 0) {
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
         for (int k = 0; k < (int)clus->GetNLabels(); k++) {
           PhotonCandidate->SetCaloPhotonMCLabel(k, mclabelsCluster[k]);
         } // end of label loop
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       }
     }
 
     fHistoClusterPt[fiCut]->Fill(PhotonCandidate->Pt(), fWeightJetJetMC);
     fHistoClusterE[fiCut]->Fill(PhotonCandidate->E(), fWeightJetJetMC);
-
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     float clusPos[3] = {0, 0, 0};
     clus->GetPosition(clusPos);
     TVector3 clusterVectorJets(clusPos[0], clusPos[1], clusPos[2]);
     double etaCluster = clusterVectorJets.Eta();
     double phiCluster = clusterVectorJets.Phi();
-
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     if (fConvJetReader->GetNJets() > 0) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       double RJetPi0Cand;
       int matchedJet = -1;
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->IsParticleInJet(fVectorJetEta, fVectorJetPhi, fConvJetReader->Get_Jet_Radius(), etaCluster, phiCluster, matchedJet, RJetPi0Cand)) {
@@ -2015,20 +2036,23 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
         fHistoClusterPtInJet[fiCut]->Fill(PhotonCandidate->Pt(), fWeightJetJetMC);
         fHistoClusterEInJet[fiCut]->Fill(PhotonCandidate->E(), fWeightJetJetMC);
         fHistoClusterPtVsJetPtInJet[fiCut]->Fill(PhotonCandidate->E(), fVectorJetPt[matchedJet], fWeightJetJetMC);
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       }
 
       double RJetPi0CandPerp = 0;
       int matchedJetPerp = -1;
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->IsParticleInJet(fVectorJetEta, fVectorJetPhiPerp, fConvJetReader->Get_Jet_Radius(), etaCluster, phiCluster, matchedJetPerp, RJetPi0CandPerp)) {
         fHistoClusterPtPerpCone[fiCut]->Fill(PhotonCandidate->Pt(), fWeightJetJetMC);
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       }
     }
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     fIsFromDesiredHeader = kTRUE;
     // bool fIsOverlappingWithOtherHeader = kFALSE;
     // bool fAllowOverlapHeaders = true;
     // test whether largest contribution to cluster orginates in added signals
     if (fIsMC > 0 && ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetSignalRejection() > 0) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       // Set the jetjet weight to 1 in case the photon candidate orignated from the minimum bias header
       // if (((AliConvEventCuts*)fEventCutArray->At(fiCut))->IsParticleFromBGEvent(PhotonCandidate->GetCaloPhotonMCLabel(0), fMCEvent, fInputEvent) == 2 && ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetSignalRejection() == 4)
       //   tempPhotonWeight = 1;
@@ -2044,11 +2068,14 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessClusters()
     }
 
     if (fIsMC > 0) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
       ProcessTrueClusterCandidatesAOD(PhotonCandidate);
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
     }
     // if ( (fIsFromDesiredHeader && !fIsOverlappingWithOtherHeader && !fAllowOverlapHeaders) || (fIsFromDesiredHeader && fAllowOverlapHeaders) ){
     fClusterCandidates.push_back(PhotonCandidate);
     // }
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessClusters() " << __LINE__ << endl;
 
     delete clus;
     delete tmpvec;
@@ -2239,24 +2266,25 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessPhotonCandidates()
 //________________________________________________________________________
 void AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates()
 {
+  int localDebug = 0;
   // PCM-Calo case
   if (fIsConvCalo) {
     if (fGammaCandidates.size() > 0) {
-
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
       TClonesArray* arrClustersMesonCand = NULL;
       if (fCorrTaskSetting.CompareTo(""))
         arrClustersMesonCand = dynamic_cast<TClonesArray*>(fInputEvent->FindListObject(Form("%sClustersBranch", fCorrTaskSetting.Data())));
-
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
       for (unsigned int firstGammaIndex = 0; firstGammaIndex < fGammaCandidates.size(); firstGammaIndex++) {
         AliAODConversionPhoton* gamma0 = dynamic_cast<AliAODConversionPhoton*>(fGammaCandidates[firstGammaIndex]);
         if (gamma0 == NULL)
           continue;
-
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
         for (unsigned int secondGammaIndex = 0; secondGammaIndex < fClusterCandidates.size(); secondGammaIndex++) {
           AliAODConversionPhoton* gamma1 = dynamic_cast<AliAODConversionPhoton*>(fClusterCandidates[secondGammaIndex]);
           if (gamma1 == NULL)
             continue;
-
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
           // match conv to clusters
           if (gamma1->GetIsCaloPhoton() > 0) {
             AliVCluster* cluster = NULL;
@@ -2265,9 +2293,9 @@ void AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates()
             } else {
               cluster = fInputEvent->GetCaloCluster(gamma1->GetCaloClusterRef());
             }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
             bool matched = ((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->MatchConvPhotonToCluster(gamma0, cluster, fInputEvent, fWeightJetJetMC);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
             if (!matched) {
               FillMesonHistograms(gamma0, gamma1, firstGammaIndex, secondGammaIndex);
             }
@@ -2277,57 +2305,73 @@ void AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates()
         }
       }
     }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
     // Pure Calo case
   } else if (fIsCalo) {
     for (unsigned int firstGammaIndex = 0; firstGammaIndex < fClusterCandidates.size(); firstGammaIndex++) {
       AliAODConversionPhoton* gamma0 = dynamic_cast<AliAODConversionPhoton*>(fClusterCandidates[firstGammaIndex]);
       if (gamma0 == NULL)
         continue;
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
       for (unsigned int secondGammaIndex = firstGammaIndex + 1; secondGammaIndex < fClusterCandidates.size(); secondGammaIndex++) {
         AliAODConversionPhoton* gamma1 = dynamic_cast<AliAODConversionPhoton*>(fClusterCandidates[secondGammaIndex]);
         if (gamma1 == NULL)
           continue;
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
         FillMesonHistograms(gamma0, gamma1, firstGammaIndex, secondGammaIndex);
       }
     }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
     // Pure Conv case
   } else if (fIsConv) {
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
     for (unsigned int firstGammaIndex = 0; firstGammaIndex < fGammaCandidates.size(); firstGammaIndex++) {
       AliAODConversionPhoton* gamma0 = dynamic_cast<AliAODConversionPhoton*>(fGammaCandidates[firstGammaIndex]);
       if (gamma0 == NULL)
         continue;
 
       for (unsigned int secondGammaIndex = firstGammaIndex + 1; secondGammaIndex < fGammaCandidates.size(); secondGammaIndex++) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
         AliAODConversionPhoton* gamma1 = dynamic_cast<AliAODConversionPhoton*>(fGammaCandidates[secondGammaIndex]);
-        if (gamma1 == NULL)
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
+        if (gamma1 == NULL){
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
           continue;
-
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
+        }
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
         FillMesonHistograms(gamma0, gamma1, firstGammaIndex, secondGammaIndex);
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
       }
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
     }
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
   }
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::CalculateMesonCandidates(), line: " << __LINE__ << endl;
 }
 
 void AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(AliAODConversionPhoton* gamma0, AliAODConversionPhoton* gamma1, int firstGammaIndex, int secondGammaIndex)
 {
+  int localDebug = 0;
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
   AliAODConversionMother* pi0cand = new AliAODConversionMother(gamma0, gamma1);
   pi0cand->SetLabels(firstGammaIndex, secondGammaIndex);
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
 
   if ((((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->MesonIsSelected(pi0cand, kTRUE, ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetEtaShift(), gamma0->GetLeadingCellID(), gamma1->GetLeadingCellID(), gamma0->GetIsCaloPhoton(), gamma1->GetIsCaloPhoton()))) {
-
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
     double weightMatBudget = 1.;
     if(fDoMaterialBudgetWeightingOfGammasForTrueMesons){
       if(fIsConv){
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         weightMatBudget = vecWeightsMatWeightsGammas[firstGammaIndex]*vecWeightsMatWeightsGammas[secondGammaIndex];
       } else if(fIsConvCalo){
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         weightMatBudget = vecWeightsMatWeightsGammas[firstGammaIndex];
       }
     }
     if (fDoMesonQA > 0) {
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       fHistoInvMassVsPt_Incl[fiCut]->Fill(pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
     }
     double RJetPi0Cand = 0;
@@ -2336,65 +2380,81 @@ void AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(AliAODConversionPho
     if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->IsParticleInJet(fVectorJetEta, fVectorJetPhi, fConvJetReader->Get_Jet_Radius(), pi0cand->Eta(), pi0cand->Phi(), matchedJet, RJetPi0Cand)) {
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->DoJetAnalysis()) {
         ptJet = fVectorJetPt[matchedJet];
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // Fill Inv Mass Histograms
       fHistoInvMassVsPt[fiCut]->Fill(pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // Fill the inv. mass histograms for all jet pTs
       fRespMatrixHandlerMesonInvMass[fiCut]->Fill(ptJet, 0.5, pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // Fill Z histograms
       float z = GetFrag(pi0cand, matchedJet, false);
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
 
       fRespMatrixHandlerMesonInvMassVsZ[fiCut]->Fill(ptJet, 0.5, pi0cand->M(), z, fWeightJetJetMC*weightMatBudget);     // Inv Mass vs. Z in Jet Pt_rec bins. Needed to subtract background in the Z-distribution
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->MesonIsSelectedByMassCut(pi0cand, 0)) { // nominal mass range
         fHistoJetPtVsFrag[fiCut]->Fill(z, ptJet, fWeightJetJetMC*weightMatBudget);
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         if (fDoMesonQA > 0) {
+          if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
           fHistoInvMassVsPtMassCut[fiCut]->Fill(pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
         }
       }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       bool isTrueMeson = false;
       if (fIsMC > 0) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         isTrueMeson = ProcessTrueMesonCandidatesAOD(pi0cand, gamma0, gamma1, matchedJet, RJetPi0Cand, weightMatBudget);
       }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       if(fIsConv && fFillDCATree){
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         // Fill meson DCA tree for conversion candidates
         FillMesonDCATree(pi0cand, gamma0, gamma1, matchedJet, isTrueMeson);
       }
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
     } // end IsParticleInJet
     // check if particle is in jet transverse to original jet.
     // Needed for underlying event study
     double RJetPi0CandPerp = 0;
     int matchedJetPerp = -1;
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
     if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->IsParticleInJet(fVectorJetEta, fVectorJetPhiPerp, fConvJetReader->Get_Jet_Radius(), pi0cand->Eta(), pi0cand->Phi(), matchedJetPerp, RJetPi0CandPerp)) {
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       fHistoInvMassVsPtPerpCone[fiCut]->Fill(pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // Fill the inv. mass histograms for all jet pTs
       fRespMatrixHandlerMesonInvMassPerpCone[fiCut]->Fill(ptJet, 0.5, pi0cand->M(), pi0cand->Pt(), fWeightJetJetMC*weightMatBudget);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // Fill Z histograms
       float z = GetFrag(pi0cand, matchedJet, false);
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       fRespMatrixHandlerMesonInvMassVsZPerpCone[fiCut]->Fill(ptJet, 0.5, pi0cand->M(), z, fWeightJetJetMC*weightMatBudget); // Inv Mass vs. Z in Jet Pt_rec bins. Needed to subtract background in the Z-distribution
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->MesonIsSelectedByMassCut(pi0cand, 0)) {     // nominal mass range
         fHistoJetPtVsFragPerpCone[fiCut]->Fill(z, ptJet, fWeightJetJetMC*weightMatBudget);
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       }
 
     } // end isInJet in perpendicular direction
     if (fIsMC) {
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       // check if meson is in true jet
       double RJetPi0CandTrue = 0;
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       int matchedJetTrue = -1;
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->IsParticleInJet(fTrueVectorJetEta, fTrueVectorJetPhi, fConvJetReader->Get_Jet_Radius(), pi0cand->Eta(), pi0cand->Phi(), matchedJetTrue, RJetPi0CandTrue)) {
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
         ProcessTrueMesonCandidatesInTrueJetsAOD(pi0cand, gamma0, gamma1, matchedJetTrue, RJetPi0CandTrue, weightMatBudget);
+        if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
       }
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
     }
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
   } // end mesonIsSelected
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::FillMesonHistograms(), line: " << __LINE__ << endl;
   if (pi0cand)
     delete pi0cand;
 }
@@ -3316,24 +3376,29 @@ bool AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesAOD(AliAODCon
 //________________________________________________________________________
 void AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD(AliAODConversionMother* Pi0Candidate, AliAODConversionPhoton* TrueGammaCandidate0, AliAODConversionPhoton* TrueGammaCandidate1, const int matchedJet, const float RJetPi0Cand, const double weightMatBudget)
 {
-
+  int localDebug = 0;
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   // Process True Mesons
   if (!fAODMCTrackArray)
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
     fAODMCTrackArray = dynamic_cast<TClonesArray*>(fInputEvent->FindListObject(AliAODMCParticle::StdBranchName()));
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   if (fAODMCTrackArray == NULL)
     return;
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   bool isTrueParticle = false;
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   // check if meson originates from the same meson
   int convertedPhotonLabel0, convertedPhotonLabel1;                                                                            // to check if two conversion clusters come from the same mother
   int gamma0MotherLabel = GetPhotonMotherLabel(TrueGammaCandidate0, convertedPhotonLabel0, (fIsCalo == false) ? false : true); // calo photon for calo
   int gamma1MotherLabel = GetPhotonMotherLabel(TrueGammaCandidate1, convertedPhotonLabel1, (fIsConv == true) ? false : true);  // calo photon for calo and convcalo
-
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   AliAODMCParticle* trueMesonCand = nullptr;
   if (gamma0MotherLabel >= 0 && gamma0MotherLabel == gamma1MotherLabel) {
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
     trueMesonCand = static_cast<AliAODMCParticle*>(fAODMCTrackArray->At(gamma1MotherLabel));
     if (trueMesonCand->GetPdgCode() == fMesonPDGCode) {
+      if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
       isTrueParticle = true;
     }
   }
@@ -3341,16 +3406,26 @@ void AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD
   // return if particle is neither the particle we are looking for or another meson we are interested in
   if (!isTrueParticle)
     return;
-
+    
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   // Define most important variables here
   float mesonPtTrue = trueMesonCand->Pt();
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
+  cout << "matchedJet: " << matchedJet << endl;
+  cout << "fTrueVectorJetPt[matchedJet]: " << fTrueVectorJetPt[matchedJet] << endl;
   float jetPtTrue = fTrueVectorJetPt[matchedJet];
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   float z_true = GetFrag(trueMesonCand, matchedJet, true);
-
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
+if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   if(fDoMesonQA>0){
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
     fHistoTrueMesonInTrueJet_JetPtVsTrueZ[fiCut]->Fill(z_true, jetPtTrue, fWeightJetJetMC*weightMatBudget);
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
     fHistoTrueMesonInTrueJet_JetPtVsTruePt[fiCut]->Fill(mesonPtTrue, jetPtTrue, fWeightJetJetMC*weightMatBudget);
+    if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
   }
+  if(localDebug>=1) cout << "Debug: AliAnalysisTaskMesonJetCorrelation::ProcessTrueMesonCandidatesInTrueJetsAOD, line: " << __LINE__ << endl;
 }
 
 //_____________________________________________________________________________________________________________________

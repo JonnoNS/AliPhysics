@@ -140,6 +140,7 @@ AliCutHandlerPCM::AliCutHandlerPCM(Int_t nMax) :
 }
 
 void AliCutHandlerPCM::AddCutPCM(TString eventCut, TString photonCut, TString mesonCut){
+//deze wordt gebruikt om de cuts toe te voegen
   if(fNCuts>=fNMaxCuts) {
     cout << "ERROR in AliCutHandlerPCM: Exceeded maximum number of cuts!" << endl;
     fValidCuts = false;
@@ -614,6 +615,7 @@ TString AliCutHandlerPCM::GetSpecialSettingFromAddConfig (
 ){
 
   TObjArray *rAddConfigArr = additionalTrainConfig.Tokenize("_");
+  cout << "INFO: additionalTrainConfig = " << additionalTrainConfig.Data() << endl;
   if(rAddConfigArr->GetEntries()<1){
     cout << "WARNING: Empty string in GetSpecialSettingFromAddConfig during parsing of additionalTrainConfig String '" << additionalTrainConfig.Data() << "'" << endl;
     return "";
@@ -627,7 +629,7 @@ TString AliCutHandlerPCM::GetSpecialSettingFromAddConfig (
     } else {
       TObjString* temp = (TObjString*) rAddConfigArr->At(i);
       TString tempStr = temp->GetString();
-      cout<< tempStr.Data()<<endl;
+      cout<< "tempStr = " << tempStr.Data() << endl;
       if(tempStr.Contains("MaterialBudgetWeights") && !configString.CompareTo("MaterialBudgetWeights")){
         TObjArray *fileNameMatBudWeightsArr = fileNameMatBudWeights.Tokenize("/");
         if(fileNameMatBudWeightsArr->GetEntries()<1 ){

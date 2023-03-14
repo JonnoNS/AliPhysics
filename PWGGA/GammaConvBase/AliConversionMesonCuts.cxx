@@ -1736,7 +1736,7 @@ Bool_t AliConversionMesonCuts::InitializeCutsFromCutString(const TString analysi
   fCutStringRead = Form("%s",analysisCutSelection.Data());
 
   // Initialize Cuts from a given Cut string
-  // AliInfo(Form("Set Meson Cutnumber: %s",analysisCutSelection.Data()));
+   AliInfo(Form("Set Meson Cutnumber: %s",analysisCutSelection.Data()));
   if(analysisCutSelection.Length()!=kNCuts) {
     AliError(Form("Cut selection has the wrong length! size is %d, number of cuts is %d", analysisCutSelection.Length(), kNCuts));
     return kFALSE;
@@ -1764,9 +1764,9 @@ Bool_t AliConversionMesonCuts::InitializeCutsFromCutString(const TString analysi
 }
 //________________________________________________________________________
 Bool_t AliConversionMesonCuts::SetCut(cutIds cutID, const Int_t value) {
-  ///Set individual cut ID
+  //Set individual cut ID
 
-  //cout << "Updating cut  " << fgkCutNames[cutID] << " (" << cutID << ") to " << value << endl;
+  cout << "Updating cut  " << fgkCutNames[cutID] << " (" << cutID << ") to " << value << endl;
   switch (cutID) {
   case kMesonKind:
     if( SetMesonKind(value)) {
@@ -1975,42 +1975,52 @@ void AliConversionMesonCuts::PrintCutsWithValues() {
 
 //________________________________________________________________________
 Bool_t AliConversionMesonCuts::SetMesonKind(Int_t mesonKind){
+  int localDebug = 1;
   // Set Cut
   switch(mesonKind){
   case 0:
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 0" << endl;
     break;
   case 1:
+    if(localDebug) cout << "Meson kind case 1" << endl;
     fMesonKind = 1;
   case 2:
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 2" << endl;
     fDoJetAnalysis = kTRUE;
     break;
   case 3:
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 3" << endl;
     fDoJetAnalysis = kTRUE;
     fDoJetQA = kTRUE;
     break;
   case 4:
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 4" << endl;
     fDoIsolatedAnalysis = kTRUE;
     break;
   case 5:
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 5" << endl;
     fDoHighPtHadronAnalysis = kTRUE;
     break;
   case 6: // out of jet
+    if(localDebug) cout << "Meson kind case 6" << endl;
     fMesonKind = 0;
     fDoJetAnalysis = kTRUE;
     fDoOutOfJet = 1;
     break;
   case 7: // out of jet, only on opposite side of Jet
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 7" << endl;
     fDoJetAnalysis = kTRUE;
     fDoOutOfJet = 2;
     break;
   case 8: // out of jet, in "donut shape" [R, R + 0.2] around Jet
     fMesonKind = 0;
+    if(localDebug) cout << "Meson kind case 8" << endl;
     fDoJetAnalysis = kTRUE;
     fDoOutOfJet = 3;
     break;
@@ -5011,38 +5021,50 @@ Bool_t AliConversionMesonCuts::ArmenterosLikeQtCut(Double_t alpha, Double_t qT){
 ///_____________________________________________________________________________
 /// Function to check if particle fullfills the required inJet criterium (inJet, out of Jet etc.)
 Bool_t AliConversionMesonCuts::IsParticleInJet(std::vector<Double_t> vectorJetEta, std::vector<Double_t> vectorJetPhi, Double_t JetRadius, Double_t partEta, Double_t partPhi, Int_t &matchedJet, Double_t &RJetPi0Cand){
-
+  int localDebug = 0;
+  if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, line: " << __LINE__ << endl;
+  if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, fDoJetAnalysis: " << fDoJetAnalysis << endl;
   if(!fDoJetAnalysis) return kTRUE;
-
+  if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, line: " << __LINE__ << endl;
   // set up important variables
   matchedJet = 0;
   RJetPi0Cand = 100; // set to a random high value such that the first jet will overwrite this value
-
+if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
   Int_t NJets = vectorJetEta.size();
   if(NJets == 0){
+    if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
     // return true if no Jets are found and particle should be outside of Jet
     // otherwise return false
-    if(fDoOutOfJet == 1) return kTRUE;
+    if(fDoOutOfJet == 1) {
+      if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
+      return kTRUE;
+    }
     else return kFALSE;
   }
-
+if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
   // generally dont assume the particle is in Jet.
   Bool_t particleInJet = kFALSE;
+  if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
   // For out of Jet (==1) assume particle is in Jet and Set value to false if it is
   if(fDoOutOfJet == 1) particleInJet = kTRUE;
-
+  if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
+if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
   for(Int_t j=0; j<NJets; j++){
+    if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
     Double_t DeltaEta = vectorJetEta.at(j)-partEta;
     Double_t DeltaPhi = abs(vectorJetPhi.at(j)-partPhi);
     if(fDoOutOfJet == 2 || fDoOutOfJet == 4){ // check if on opposite side of jet (DeltaEta/Phi = 0 if directly opposite)
       DeltaEta = vectorJetEta.at(j) + partEta;
+      if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
       DeltaPhi = abs(TMath::Pi() - DeltaPhi);
     }
     if(DeltaPhi > TMath::Pi()) {
       DeltaPhi = 2*TMath::Pi() - DeltaPhi;
+      if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
     }
     Double_t RJetPi0Cand_tmp = TMath::Sqrt(DeltaEta*DeltaEta+DeltaPhi*DeltaPhi);
     if(JetRadius > 0 ){
+      if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
       if(fDoOutOfJet == 0){ // in jet
         if(RJetPi0Cand_tmp < JetRadius){
           // if the particle is in multiple Jet cones, take the nearest Jet
@@ -5052,26 +5074,32 @@ Bool_t AliConversionMesonCuts::IsParticleInJet(std::vector<Double_t> vectorJetEt
         }
       } else if(fDoOutOfJet == 1){ // out of jet
         if(RJetPi0Cand_tmp < JetRadius){
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
           particleInJet = kFALSE; // particle is in Jet so it cant be out of Jet
           // can break for out of Jet as there is no associated Jet
           break;
         }
       } else if(fDoOutOfJet == 2){ // out of jet on away side
         if(RJetPi0Cand_tmp < JetRadius){
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
           // if the particle is in multiple Jet cones, take the nearest Jet
           if(RJetPi0Cand_tmp < RJetPi0Cand) RJetPi0Cand = RJetPi0Cand_tmp;
           matchedJet = j;
           particleInJet = kTRUE;
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
         }
       } else if(fDoOutOfJet == 3){ // out of jet in interval [R, R+0.2]
         if((RJetPi0Cand_tmp > JetRadius) && (RJetPi0Cand_tmp < JetRadius + 0.2)){
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
           // if the particle is in multiple Jet cones, take the nearest Jet
           if(RJetPi0Cand_tmp < RJetPi0Cand) RJetPi0Cand = RJetPi0Cand_tmp;
           matchedJet = j;
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
           particleInJet = kTRUE;
         }
       } else if(fDoOutOfJet == 4){ // in jet on away side (like case 2 but additionally particle has to be inside Jet)
         if(RJetPi0Cand_tmp < JetRadius){
+          if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << "line: " << __LINE__ << endl;
           // loop over all Jets and see if particle is not only opposite to Jet, but also in Jet
           for(Int_t k=0; k<NJets; k++){
             Double_t dEta = vectorJetEta.at(k)-partEta;
@@ -5085,6 +5113,7 @@ Bool_t AliConversionMesonCuts::IsParticleInJet(std::vector<Double_t> vectorJetEt
               if(RJetPi0Cand_tmp < RJetPi0Cand) RJetPi0Cand = RJetPi0Cand_tmp;
               matchedJet = j;
               particleInJet = kTRUE;
+              if(localDebug>=1) cout << "Debug: AliConversionMesonCuts::IsParticleInJet, matchedJet = " << matchedJet << " line: " << __LINE__ << endl;
             }
           }
         }

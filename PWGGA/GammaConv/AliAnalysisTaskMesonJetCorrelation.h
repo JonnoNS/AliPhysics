@@ -455,7 +455,7 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   bool fDCATree_isTrueMeson;                          //! flag if meson is true meson or not
 
  private:
-  static constexpr bool fLocalDebugFlag = true;
+  static constexpr bool fLocalDebugFlag = false;
   AliAnalysisTaskMesonJetCorrelation(const AliAnalysisTaskMesonJetCorrelation&);            // Prevent copy-construction
   AliAnalysisTaskMesonJetCorrelation& operator=(const AliAnalysisTaskMesonJetCorrelation&); // Prevent assignment
 
