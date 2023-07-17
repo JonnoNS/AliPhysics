@@ -61,8 +61,12 @@ AliAnalysisTaskConvJet::AliAnalysisTaskConvJet() : AliAnalysisTaskEmcalJet(),
                                                    fTrueVectorJetEta(0),
                                                    fTrueVectorJetPhi(0),
                                                    fTrueVectorJetR(0),
+                                                   fTrueVectorJetNPart(0),
                                                    fTrueVectorJetParton(0),
-                                                   fTrueVectorJetPartonPt(0)
+                                                   fTrueVectorJetPartonPt(0),
+                                                   fTrueVectorJetPartonPx(0),
+                                                   fTrueVectorJetPartonPy(0),
+                                                   fTrueVectorJetPartonPz(0)
 {
 }
 
@@ -85,8 +89,12 @@ AliAnalysisTaskConvJet::AliAnalysisTaskConvJet(const char* name) : AliAnalysisTa
                                                                    fTrueVectorJetEta(0),
                                                                    fTrueVectorJetPhi(0),
                                                                    fTrueVectorJetR(0),
+                                                                   fTrueVectorJetNPart(0),
                                                                    fTrueVectorJetParton(0),
-                                                                   fTrueVectorJetPartonPt(0)
+                                                                   fTrueVectorJetPartonPt(0),
+                                                                   fTrueVectorJetPartonPx(0),
+                                                                   fTrueVectorJetPartonPy(0),
+                                                                   fTrueVectorJetPartonPz(0)
 {
   SetMakeGeneralHistograms(kTRUE);
 }
@@ -131,7 +139,7 @@ void AliAnalysisTaskConvJet::DoJetLoop()
     TString JetName = jetCont->GetTitle();
     TObjArray* arr = JetName.Tokenize("__");
     TObjString* testObjString = (TObjString*)arr->At(2);
-    if (testObjString->GetString() != "mcparticles") {
+    if (!(static_cast<TString>(testObjString->GetString())).Contains("mcparticles")) {
       UInt_t count = 0;
       fNJets = 0;
       fVectorJetPt.clear();
@@ -171,6 +179,7 @@ void AliAnalysisTaskConvJet::DoJetLoop()
       fTrueVectorJetEta.clear();
       fTrueVectorJetPhi.clear();
       fTrueVectorJetR.clear();
+      fTrueVectorJetNPart.clear();
       for (auto const& jet : jetCont->accepted()) {
         if (!jet)
           continue;
@@ -182,6 +191,7 @@ void AliAnalysisTaskConvJet::DoJetLoop()
         fTrueVectorJetEta.push_back(jet->Eta());
         fTrueVectorJetPhi.push_back(jet->Phi());
         fTrueVectorJetR.push_back(jet->Area());
+        fTrueVectorJetNPart.push_back(jet->N());
       }
       fTrueNJets = count;
     }
@@ -197,6 +207,9 @@ void AliAnalysisTaskConvJet::FindPartonsJet(TClonesArray* arrMCPart)
   // Loop over all primary MC particle
   fTrueVectorJetParton.resize(fTrueNJets);
   fTrueVectorJetPartonPt.resize(fTrueNJets);
+  fTrueVectorJetPartonPx.resize(fTrueNJets);
+  fTrueVectorJetPartonPy.resize(fTrueNJets);
+  fTrueVectorJetPartonPz.resize(fTrueNJets);
   std::vector<double> partonEnergy(fTrueNJets, -1);
   double JetR2 = Get_Jet_Radius() * Get_Jet_Radius();
 
@@ -230,6 +243,10 @@ void AliAnalysisTaskConvJet::FindPartonsJet(TClonesArray* arrMCPart)
         partonEnergy[indexNearestJet] = particle->Pt();
         fTrueVectorJetParton[indexNearestJet] = i;
         fTrueVectorJetPartonPt[indexNearestJet] = particle->Pt();
+        fTrueVectorJetPartonPx[indexNearestJet] = particle->Px();
+        fTrueVectorJetPartonPy[indexNearestJet] = particle->Py();
+        fTrueVectorJetPartonPz[indexNearestJet] = particle->Pz();
+        
       }
     }
   }

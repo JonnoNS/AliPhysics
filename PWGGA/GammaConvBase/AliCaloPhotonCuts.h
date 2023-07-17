@@ -219,6 +219,7 @@ class AliCaloPhotonCuts : public AliAnalysisCuts {
       kPP13T17P1JJ,
       kPP13T17P1JJTrigger,
       kLHC21j8a,
+      kPP13T17HERJJ,
       // pp 13 TeV 2018
       kPP13T18P1JJ,
       kPP13T18P1JJTrigger,
@@ -612,6 +613,7 @@ class AliCaloPhotonCuts : public AliAnalysisCuts {
     TH2F*     fHistClusterEtavsPhiAfterQA;              // eta-phi-distribution of all after cluster quality cuts
     TH2F*     fHistClusterEtavsPhiAfterQA_onlyTriggered;// eta-phi-distribution of all after cluster quality cuts
     TH2F*     fHistClusterEtavsPhiBackground;           // eta-phi-distribution of all clusters in background calculation
+    TH2F*     fHistClusterEtavsPhiMatchedClusters;      // eta-phi-distribution of all track-matched clusters
     TH2F*     fHistClusterTimevsEBeforeQA;              // Cluster time vs E before cluster quality cuts
     TH2F*     fHistClusterTimevsEAfterQA;               // Cluster time vs E after cluster quality cuts
     TH2F*     fHistClusterTimevsELowGain;               // Cluster time vs E for low gain cluster
@@ -642,6 +644,7 @@ class AliCaloPhotonCuts : public AliAnalysisCuts {
     TH2F*     fHistClusterEnergyvsNCellsBeforeQA;       // Cluster Energy vs NCells before QA
     TH2F*     fHistClusterEnergyvsNCellsAfterQA;        // Cluster Energy vs NCells after QA
     TH2F*     fHistCellEnergyvsCellID;                  // Cell Energy vs CellID
+    TH2F*     fHistClusterEnergyvsCellID;               // Cluster Energy vs CellID
     TH1F*     fHistCellEnergyLG;                        // Cell Energy of low gain cells
     TH1F*     fHistCellEnergyHG;                        // Cell Energy of high gain cells
     TH2F*     fHistCellTimevsCellID;                    // Cell Time vs CellID
@@ -740,7 +743,7 @@ class AliCaloPhotonCuts : public AliAnalysisCuts {
 
   private:
 
-    ClassDef(AliCaloPhotonCuts,126)
+    ClassDef(AliCaloPhotonCuts,128)
 };
 
 #endif

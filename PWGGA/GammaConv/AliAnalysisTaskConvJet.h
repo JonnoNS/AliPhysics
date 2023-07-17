@@ -58,9 +58,13 @@ class AliAnalysisTaskConvJet : public AliAnalysisTaskEmcalJet
   std::vector<Double_t> GetTrueVectorJetEta() { return fTrueVectorJetEta; }
   std::vector<Double_t> GetTrueVectorJetPhi() { return fTrueVectorJetPhi; }
   std::vector<Double_t> GetTrueVectorJetArea() { return fTrueVectorJetR; }
+  std::vector<Double_t> GetTrueVectorJetNPart() { return fTrueVectorJetNPart; }
 
   std::vector<int> GetTrueVectorJetParton() { return fTrueVectorJetParton; }
   std::vector<double> GetTrueVectorJetPartonPt() { return fTrueVectorJetPartonPt; }
+  std::vector<double> GetTrueVectorJetPartonPx() { return fTrueVectorJetPartonPx; }
+  std::vector<double> GetTrueVectorJetPartonPy() { return fTrueVectorJetPartonPy; }
+  std::vector<double> GetTrueVectorJetPartonPz() { return fTrueVectorJetPartonPz; }
 
   Double_t Get_Jet_Radius()
   {
@@ -102,16 +106,20 @@ class AliAnalysisTaskConvJet : public AliAnalysisTaskEmcalJet
   std::vector<Double_t> fTrueVectorJetEta; // Vector for the eta of the true jets
   std::vector<Double_t> fTrueVectorJetPhi; // Vector for the phi of the true jets
   std::vector<Double_t> fTrueVectorJetR;   // Vector for the radius of the true jets
+  std::vector<Double_t> fTrueVectorJetNPart; // Vector for the number of particles contributing to this true jet
 
   std::vector<int> fTrueVectorJetParton;      // vector containing the mc stack id from the leading parton ("seed of the jet")
   std::vector<double> fTrueVectorJetPartonPt; // vector containing the pt of the leading parton ("seed of the jet")
+  std::vector<double> fTrueVectorJetPartonPx; // vector containing the pt of the leading parton ("seed of the jet")
+  std::vector<double> fTrueVectorJetPartonPy; // vector containing the pt of the leading parton ("seed of the jet")
+  std::vector<double> fTrueVectorJetPartonPz; // vector containing the pt of the leading parton ("seed of the jet")
 
  private:
   AliAnalysisTaskConvJet(const AliAnalysisTaskConvJet&);
   AliAnalysisTaskConvJet& operator=(const AliAnalysisTaskConvJet&);
 
   /// \cond CLASSIMP
-  ClassDef(AliAnalysisTaskConvJet, 13);
+  ClassDef(AliAnalysisTaskConvJet, 15);
   /// \endcond
 };
 #endif

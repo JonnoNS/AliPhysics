@@ -136,8 +136,8 @@ public:
   static const Double_t fgkdDeltaPhiMax; // maximum delta-phi_V0-jet
 //New public functions and parameters for the Xi analysis
 //------------------------------------------------------------------------------------------
-  void FillCascadeCandidates(Double_t mXi, Bool_t isXi, Int_t iCut, Int_t iCent);
-  void FillQAHistogramXi(AliAODVertex* vtx, const AliAODcascade* cascade, Int_t iIndexHisto, Bool_t IsCandXi, Bool_t IsInPeakXi);
+  void FillCascadeCandidates(Double_t mXi, Double_t mOmega, Bool_t isXiMinus, Bool_t isXiPlus, Bool_t isOmegaMinus, Bool_t isOmegaPlus, Int_t iCut, Int_t iCent);
+  void FillQAHistogramXi(AliAODVertex* vtx, const AliAODcascade* cascade, Int_t iIndexHisto,  Bool_t IsCandXiMinus, Bool_t IsCandXiPlus, Bool_t IsCandOmegaMinus, Bool_t IsCandOmegaPlus, Bool_t IsInPeakXi, Bool_t IsInPeakOmega);
   // set functions 
   void SetCutDCACascadeBachToPrimVtxMin(Double_t val = 0.04) {fdCutDCACascadeBachToPrimVtxMin = val;}
   void SetCutDCACascadeV0ToPrimVtxMin(Double_t val = 0.1) {fdCutDCACascadeV0ToPrimVtxMin = val;}
@@ -151,6 +151,12 @@ public:
   static const Double_t fgkdMassXiMin; // minimum
   static const Double_t fgkdMassXiMax; // maximum  
 //------------------------------------------------------------------------------------------
+  // axis: Omega invariant mass
+  static const Int_t fgkiNBinsMassOmega; // number of bins (uniform binning)
+  static const Double_t fgkdMassOmegaMin; // minimum
+  static const Double_t fgkdMassOmegaMax; // maximum  
+//------------------------------------------------------------------------------------------
+
 
 protected:
   void ExecOnce();
@@ -168,6 +174,11 @@ private:
   TList* fOutputListQA; //! Output list for quality assurance
   TList* fOutputListCuts; //! Output list for checking cuts
   TList* fOutputListMC; //! Output list for MC related results
+//------------------------------------------------------------------------------------------
+  TList* fOutputListStdCascade; //! Output list for standard analysis results for cascades
+  TList* fOutputListQACascade; //! Output list for quality assurance for cascades
+  TList* fOutputListMCCascade; //! Output list for MC related results for cascades
+//------------------------------------------------------------------------------------------
 
   // Data selection
   Bool_t fbIsPbPb; // switch: Pb+Pb / p+p collisions
@@ -217,7 +228,6 @@ private:
   Double_t fdCutRapV0Max; // (0.75) max |rapidity| of V0 (turned off)
   Double_t fdCutNTauKMax; // (5.0) [tau] max proper lifetime in multiples of the mean lifetime, K0S
   Double_t fdCutNTauLMax; // (5.0) [tau] max proper lifetime in multiples of the mean lifetime, Lambda
-  Double_t fdCutNTauXMax; // (5.0) [tau] max proper lifetime in multiples of the mean lifetime, Xi
   Bool_t fbCutArmPod; // (yes) Armenteros-Podolanski for K0S
   Bool_t fbCutCross; // (no) cross-contamination
 
@@ -502,6 +512,8 @@ private:
   Double_t fdCutCPACascadeMin;   // min cosine of the pointing angle of the cascade
   Double_t fdCutCPACascadeV0Min; // min cosine of the pointing angle of the V0 in the cascade
 
+  Double_t fdCutNTauXMax; // (5.0) [tau] max proper lifetime in multiples of the mean lifetime, Xi
+
   static const Int_t fgkiNCategCascade = 21; // number of Cascade selection steps  
   //Histograms 
   TH1D* fh1CascadeCandPerEvent; //! number of Cascade cand per event
@@ -517,52 +529,108 @@ private:
   TH2D* fh2QACascadePhiRows[fgkiNQAIndeces]; //! azimuth vs TPC rows
   TH2D* fh2QACascadeNClRows[fgkiNQAIndeces]; //! clusters vs TPC rows
   TH2D* fh2QACascadeEtaNCl[fgkiNQAIndeces]; //! pseudorapidity vs clusters
-  // Xi
-  TH1D* fh1CascadeCounterCentXi[fgkiNBinsCent]; //! number of Xi candidates after various cuts
-  TH1D* fh1CascadeInvMassXiAll[fgkiNCategCascade]; //! 
-  TH2D* fh2QACascadeEtaPtXiPeak[fgkiNQAIndeces]; //!
-  TH2D* fh2QACascadeEtaEtaXi[fgkiNQAIndeces]; //!
-  TH2D* fh2QACascadePhiPhiXi[fgkiNQAIndeces]; //!
-  TH1D* fh1QACascadeRapXi[fgkiNQAIndeces]; //!
-  TH2D* fh2QACascadePtPtXiPeak[fgkiNQAIndeces]; //!
-  TH2D* fh2ArmPodXi[fgkiNQAIndeces]; //! ??
-  TH1D* fh1CascadeCandPerEventCentXi[fgkiNBinsCent]; //!
-  TH1D* fh1CascadeInvMassXiCent[fgkiNBinsCent]; //!
-  // Xi Inclusive
-  THnSparse* fhnCascadeInclusiveXi[fgkiNBinsCent]; //!
-  // Xi Cones
-  THnSparse* fhnCascadeInJetXi[fgkiNBinsCent]; //!
-  THnSparse* fhnCascadeInPerpXi[fgkiNBinsCent]; //!
-  THnSparse* fhnCascadeInRndXi[fgkiNBinsCent]; //!
-  THnSparse* fhnCascadeInMedXi[fgkiNBinsCent]; //!
-  THnSparse* fhnCascadeOutJetXi[fgkiNBinsCent]; //!
-  THnSparse* fhnCascadeNoJetXi[fgkiNBinsCent]; //!
-  TH2D* fh2CascadePtJetAngleXi[fgkiNBinsCent]; //!
-  TH1D* fh1DCAInXi[fgkiNBinsCent]; //!
-  TH1D* fh1DCAOutXi[fgkiNBinsCent]; //! 
+  // XiMinus
+  //-------------------------
+  TH1D* fh1CascadeCounterCentXiMinus[fgkiNBinsCent]; //! number of Xi candidates after various cuts
+  TH1D* fh1CascadeInvMassXiMinusAll[fgkiNCategCascade]; //! 
+  TH2D* fh2QACascadeEtaPtXiMinusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadeEtaEtaXiMinus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePhiPhiXiMinus[fgkiNQAIndeces]; //!
+  TH1D* fh1QACascadeRapXiMinus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePtPtXiMinusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2ArmPodXiMinus[fgkiNQAIndeces]; //! ??
+  TH1D* fh1CascadeCandPerEventCentXiMinus[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeInvMassXiMinusCent[fgkiNBinsCent]; //!
+  // XiMinus Inclusive
+  THnSparse* fhnCascadeInclusiveXiMinus[fgkiNBinsCent]; //!
+  // XiMinus Cones
+  THnSparse* fhnCascadeInJetXiMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInPerpXiMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInRndXiMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInMedXiMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeOutJetXiMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeNoJetXiMinus[fgkiNBinsCent]; //!
+  TH2D* fh2CascadePtJetAngleXiMinus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAInXiMinus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAOutXiMinus[fgkiNBinsCent]; //! 
   // MC histograms
   // inclusive
-  TH1D* fh1CascadeXiPtMCGen[fgkiNBinsCent]; //!
-  TH1D* fh1CascadeXiPtMCRec[fgkiNBinsCent]; //!
-  TH2D* fh2CascadeXiPtMassMCRec[fgkiNBinsCent]; //!
-  TH1D* fh1CascadeXiPtMCRecFalse[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeXiMinusPtMCGen[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeXiMinusPtMCRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiMinusPtMassMCRec[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeXiMinusPtMCRecFalse[fgkiNBinsCent]; //!
   // inclusive eta-pT efficiency
-  TH2D* fh2CascadeXiEtaPtMCGen[fgkiNBinsCent]; //!
-  THnSparse* fh3CascadeXiEtaPtMassMCRec[fgkiNBinsCent]; //!
-  // MC daughter eta inclusive  //  THnSparse* fhnCascadeXiInclDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade generated
-  THnSparse* fhnCascadeXiInclDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade reconstructed
+  TH2D* fh2CascadeXiMinusEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeXiMinusEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta inclusive  //  THnSparse* fhnCascadeXiMinusInclDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade generated
+  THnSparse* fhnCascadeXiMinusInclDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade reconstructed
   // in jets
-  TH2D* fh2CascadeXiInJetPtMCGen[fgkiNBinsCent]; //!
-  TH2D* fh2CascadeXiInJetPtMCRec[fgkiNBinsCent]; //!
-  THnSparse* fh3CascadeXiInJetPtMassMCRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiMinusInJetPtMCGen[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiMinusInJetPtMCRec[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeXiMinusInJetPtMassMCRec[fgkiNBinsCent]; //!
   // in jets eta-pT efficiency
-  THnSparse* fh3CascadeXiInJetEtaPtMCGen[fgkiNBinsCent]; //!
-  THnSparse* fh4CascadeXiInJetEtaPtMassMCRec[fgkiNBinsCent]; //!
-  // MC daughter eta in  CascadeXiInJetsDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 generated
-  THnSparse* fhnCascadeXiInJetsDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 reconstructed
+  THnSparse* fh3CascadeXiMinusInJetEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh4CascadeXiMinusInJetEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta in  CascadeXiMinusInJetsDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 generated
+  THnSparse* fhnCascadeXiMinusInJetsDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 reconstructed
   // resolution
-  TH2D* fh2CascadeXiMCResolMPt[fgkiNBinsCent]; //!
-  TH2D* fh2CascadeXiMCPtGenPtRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiMinusMCResolMPt[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiMinusMCPtGenPtRec[fgkiNBinsCent]; //!
+
+  //jet histograms
+  TH1D* fh1DistanceCascadeJetsXiMinus[fgkiNBinsCent]; //! distance in eta-phi between Cascade and the closest jet
+  //XiMinus-------------------------
+  // XiPlus
+  //-------------------------
+  TH1D* fh1CascadeCounterCentXiPlus[fgkiNBinsCent]; //! number of Xi candidates after various cuts
+  TH1D* fh1CascadeInvMassXiPlusAll[fgkiNCategCascade]; //! 
+  TH2D* fh2QACascadeEtaPtXiPlusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadeEtaEtaXiPlus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePhiPhiXiPlus[fgkiNQAIndeces]; //!
+  TH1D* fh1QACascadeRapXiPlus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePtPtXiPlusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2ArmPodXiPlus[fgkiNQAIndeces]; //! ??
+  TH1D* fh1CascadeCandPerEventCentXiPlus[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeInvMassXiPlusCent[fgkiNBinsCent]; //!
+  // XiPlus Inclusive
+  THnSparse* fhnCascadeInclusiveXiPlus[fgkiNBinsCent]; //!
+  // XiPlus Cones
+  THnSparse* fhnCascadeInJetXiPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInPerpXiPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInRndXiPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInMedXiPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeOutJetXiPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeNoJetXiPlus[fgkiNBinsCent]; //!
+  TH2D* fh2CascadePtJetAngleXiPlus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAInXiPlus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAOutXiPlus[fgkiNBinsCent]; //! 
+  // MC histograms
+  // inclusive
+  TH1D* fh1CascadeXiPlusPtMCGen[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeXiPlusPtMCRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiPlusPtMassMCRec[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeXiPlusPtMCRecFalse[fgkiNBinsCent]; //!
+  // inclusive eta-pT efficiency
+  TH2D* fh2CascadeXiPlusEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeXiPlusEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta inclusive  //  THnSparse* fhnCascadeXiPlusInclDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade generated
+  THnSparse* fhnCascadeXiPlusInclDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade reconstructed
+  // in jets
+  TH2D* fh2CascadeXiPlusInJetPtMCGen[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiPlusInJetPtMCRec[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeXiPlusInJetPtMassMCRec[fgkiNBinsCent]; //!
+  // in jets eta-pT efficiency
+  THnSparse* fh3CascadeXiPlusInJetEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh4CascadeXiPlusInJetEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta in  CascadeXiPlusInJetsDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 generated
+  THnSparse* fhnCascadeXiPlusInJetsDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 reconstructed
+  // resolution
+  TH2D* fh2CascadeXiPlusMCResolMPt[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeXiPlusMCPtGenPtRec[fgkiNBinsCent]; //!
+
+  //jet histograms
+  TH1D* fh1DistanceCascadeJetsXiPlus[fgkiNBinsCent]; //! distance in eta-phi between Cascade and the closest jet
+  //XiPlus------------------------
   
   TH1D* fh1QACascadePt[fgkiNQAIndeces]; //! pt
   TH1D* fh1QACascadeCharge[fgkiNQAIndeces]; //! charge
@@ -578,14 +646,118 @@ private:
   TH1D* fh1QACascadeCTau2D[fgkiNQAIndeces]; //! lifetime calculated in xy
   TH1D* fh1QACascadeCTau3D[fgkiNQAIndeces]; //! lifetime calculated in xyz
 
+// OmegaMinus
+  //-------------------------
+  TH1D* fh1CascadeCounterCentOmegaMinus[fgkiNBinsCent]; //! number of Omega candidates after various cuts
+  TH1D* fh1CascadeInvMassOmegaMinusAll[fgkiNCategCascade]; //! 
+  TH2D* fh2QACascadeEtaPtOmegaMinusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadeEtaEtaOmegaMinus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePhiPhiOmegaMinus[fgkiNQAIndeces]; //!
+  TH1D* fh1QACascadeRapOmegaMinus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePtPtOmegaMinusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2ArmPodOmegaMinus[fgkiNQAIndeces]; //! ??
+  TH1D* fh1CascadeCandPerEventCentOmegaMinus[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeInvMassOmegaMinusCent[fgkiNBinsCent]; //!
+  // OmegaMinus Inclusive
+  THnSparse* fhnCascadeInclusiveOmegaMinus[fgkiNBinsCent]; //!
+  // OmegaMinus Cones
+  THnSparse* fhnCascadeInJetOmegaMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInPerpOmegaMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInRndOmegaMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInMedOmegaMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeOutJetOmegaMinus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeNoJetOmegaMinus[fgkiNBinsCent]; //!
+  TH2D* fh2CascadePtJetAngleOmegaMinus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAInOmegaMinus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAOutOmegaMinus[fgkiNBinsCent]; //! 
+  // MC histograms
+  // inclusive
+  TH1D* fh1CascadeOmegaMinusPtMCGen[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeOmegaMinusPtMCRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaMinusPtMassMCRec[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeOmegaMinusPtMCRecFalse[fgkiNBinsCent]; //!
+  // inclusive eta-pT efficiency
+  TH2D* fh2CascadeOmegaMinusEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeOmegaMinusEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta inclusive  //  THnSparse* fhnCascadeOmegaMinusInclDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade generated
+  THnSparse* fhnCascadeOmegaMinusInclDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade reconstructed
+  // in jets
+  TH2D* fh2CascadeOmegaMinusInJetPtMCGen[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaMinusInJetPtMCRec[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeOmegaMinusInJetPtMassMCRec[fgkiNBinsCent]; //!
+  // in jets eta-pT efficiency
+  THnSparse* fh3CascadeOmegaMinusInJetEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh4CascadeOmegaMinusInJetEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta in  CascadeOmegaMinusInJetsDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 generated
+  THnSparse* fhnCascadeOmegaMinusInJetsDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 reconstructed
+  // resolution
+  TH2D* fh2CascadeOmegaMinusMCResolMPt[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaMinusMCPtGenPtRec[fgkiNBinsCent]; //!
+
   //jet histograms
-  TH1D* fh1DistanceCascadeJetsXi[fgkiNBinsCent]; //! distance in eta-phi between Cascade and the closest jet
+  TH1D* fh1DistanceCascadeJetsOmegaMinus[fgkiNBinsCent]; //! distance in eta-phi between Cascade and the closest jet
+  //OmegaMinus-------------------------
+  // OmegaPlus
+  //-------------------------
+  TH1D* fh1CascadeCounterCentOmegaPlus[fgkiNBinsCent]; //! number of Omega candidates after various cuts
+  TH1D* fh1CascadeInvMassOmegaPlusAll[fgkiNCategCascade]; //! 
+  TH2D* fh2QACascadeEtaPtOmegaPlusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadeEtaEtaOmegaPlus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePhiPhiOmegaPlus[fgkiNQAIndeces]; //!
+  TH1D* fh1QACascadeRapOmegaPlus[fgkiNQAIndeces]; //!
+  TH2D* fh2QACascadePtPtOmegaPlusPeak[fgkiNQAIndeces]; //!
+  TH2D* fh2ArmPodOmegaPlus[fgkiNQAIndeces]; //! ??
+  TH1D* fh1CascadeCandPerEventCentOmegaPlus[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeInvMassOmegaPlusCent[fgkiNBinsCent]; //!
+  // OmegaPlus Inclusive
+  THnSparse* fhnCascadeInclusiveOmegaPlus[fgkiNBinsCent]; //!
+  // OmegaPlus Cones
+  THnSparse* fhnCascadeInJetOmegaPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInPerpOmegaPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInRndOmegaPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeInMedOmegaPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeOutJetOmegaPlus[fgkiNBinsCent]; //!
+  THnSparse* fhnCascadeNoJetOmegaPlus[fgkiNBinsCent]; //!
+  TH2D* fh2CascadePtJetAngleOmegaPlus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAInOmegaPlus[fgkiNBinsCent]; //!
+  TH1D* fh1DCAOutOmegaPlus[fgkiNBinsCent]; //! 
+  // MC histograms
+  // inclusive
+  TH1D* fh1CascadeOmegaPlusPtMCGen[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeOmegaPlusPtMCRec[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaPlusPtMassMCRec[fgkiNBinsCent]; //!
+  TH1D* fh1CascadeOmegaPlusPtMCRecFalse[fgkiNBinsCent]; //!
+  // inclusive eta-pT efficiency
+  TH2D* fh2CascadeOmegaPlusEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeOmegaPlusEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta inclusive  //  THnSparse* fhnCascadeOmegaPlusInclDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade generated
+  THnSparse* fhnCascadeOmegaPlusInclDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_Cascade reconstructed
+  // in jets
+  TH2D* fh2CascadeOmegaPlusInJetPtMCGen[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaPlusInJetPtMCRec[fgkiNBinsCent]; //!
+  THnSparse* fh3CascadeOmegaPlusInJetPtMassMCRec[fgkiNBinsCent]; //!
+  // in jets eta-pT efficiency
+  THnSparse* fh3CascadeOmegaPlusInJetEtaPtMCGen[fgkiNBinsCent]; //!
+  THnSparse* fh4CascadeOmegaPlusInJetEtaPtMassMCRec[fgkiNBinsCent]; //!
+  // MC daughter eta in  CascadeOmegaPlusInJetsDaughterEtaPtPtMCGen[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 generated
+  THnSparse* fhnCascadeOmegaPlusInJetsDaughterEtaPtPtMCRec[fgkiNBinsCent]; //! eta_daughter-pt_daughter-pt_V0 reconstructed
+  // resolution
+  TH2D* fh2CascadeOmegaPlusMCResolMPt[fgkiNBinsCent]; //!
+  TH2D* fh2CascadeOmegaPlusMCPtGenPtRec[fgkiNBinsCent]; //!
+
+  //jet histograms
+  TH1D* fh1DistanceCascadeJetsOmegaPlus[fgkiNBinsCent]; //! distance in eta-phi between Cascade and the closest jet
+  //OmegaPlus------------------------
+  
+  //TH1D* fh1QACascadeOmegaCos[fgkiNQAIndeces]; //! cosine of pointing angle (CPA) (Omega)
+
+
 //-------------------------------------------------------------------------------------------
 
   AliAnalysisTaskV0sInJetsEmcal(const AliAnalysisTaskV0sInJetsEmcal&); // not implemented
   AliAnalysisTaskV0sInJetsEmcal& operator=(const AliAnalysisTaskV0sInJetsEmcal&); // not implemented
 
-  ClassDef(AliAnalysisTaskV0sInJetsEmcal, 23) // task for analysis of V0s (K0S, (anti-)Lambda) in charged jets
+  ClassDef(AliAnalysisTaskV0sInJetsEmcal, 26) // task for analysis of V0s (K0S, (anti-)Lambda) in charged jets
 };
 
 #endif

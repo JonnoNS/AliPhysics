@@ -42,10 +42,17 @@ AliAnalysisTaskCorrForFlowMaster::AliAnalysisTaskCorrForFlowMaster() : AliAnalys
     fVetoJetEvents(kFALSE),
     fRejectSecondariesFromMC(kFALSE),
     fBoostAMPT(kFALSE),
+    fCreateQAPlots(kFALSE),
+    fUseLikeSign(kFALSE),
+    fUseUnlikeSign(kFALSE),
+    fselectjetsinTPC(kFALSE),
+    fJetvetoselectionval(0.5),
     fFilterBit(96),
     fbSign(0),
     fRunNumber(-1),
     fNofTracks(0),
+    fNofTrackGlobal(0),
+    fNofEventGlobal(0),
     fNofMinHighPtTracksForRejection(0),
     fNchMin(0),
     fNchMax(100000),
@@ -105,10 +112,17 @@ AliAnalysisTaskCorrForFlowMaster::AliAnalysisTaskCorrForFlowMaster(const char* n
     fVetoJetEvents(kFALSE),
     fRejectSecondariesFromMC(kFALSE),
     fBoostAMPT(kFALSE),
+    fCreateQAPlots(kFALSE),
+    fUseLikeSign(kFALSE),
+    fUseUnlikeSign(kFALSE),
+    fselectjetsinTPC(kFALSE),
+    fJetvetoselectionval(0.5),
     fFilterBit(96),
     fbSign(0),
     fRunNumber(-1),
     fNofTracks(0),
+    fNofTrackGlobal(0),
+    fNofEventGlobal(0),
     fNofMinHighPtTracksForRejection(0),
     fNchMin(0),
     fNchMax(100000),
@@ -196,10 +210,29 @@ void AliAnalysisTaskCorrForFlowMaster::UserCreateOutputObjects()
 
     if(!fSkipCorr) CreateTHnCorrelations();
 
+    if(fCreateQAPlots){
+      fhPT = new TH1D("PT", "PT", 1000, 0, 10);
+      fhPT->Sumw2();
+      fOutputListCharged->Add(fhPT);
+
+
+      fhPhi = new TH1D("Phi", "Phi", 100, 0, TMath::TwoPi());
+      fhPhi->Sumw2();
+      fOutputListCharged->Add(fhPhi);
+
+
+      fhEta = new TH1D("Eta", "Eta", 100, -fAbsEtaMax, fAbsEtaMax);
+      fhEta->Sumw2();
+      fOutputListCharged->Add(fhEta);
+
+      fhPVz = new TH1D("PVz", "PVz", 100, -fPVzCut, fPVzCut);
+      fhPVz->Sumw2();
+      fOutputListCharged->Add(fhPVz);
+
+    }
+
     
-    fhPT = new TH1D("PT", "PT", 1000, 0, 10);
-    fhPT->Sumw2();
-    fOutputListCharged->Add(fhPT);
+    
     
       
     
@@ -227,6 +260,12 @@ void AliAnalysisTaskCorrForFlowMaster::UserExec(Option_t *)
     fAOD = dynamic_cast<AliAODEvent*>(InputEvent());
     if(!fAOD) { AliError("Event not loaded."); return; }
     if(!IsEventSelected()) { return; }
+    fNofTrackGlobal = 0;
+    fNofEventGlobal++;
+
+    if(fCreateQAPlots){
+      fhPVz->Fill(fPVz);
+    }
 
     Int_t iTracks(fAOD->GetNumberOfTracks());
     if(iTracks < 1 ) {
@@ -379,11 +418,12 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::IsTrackSelected(const AliAODTrack* trac
   if(fRejectSecondariesFromMC){
     AliMCEvent* mcEvent = dynamic_cast<AliMCEvent*>(MCEvent());
     if(!mcEvent) return kFALSE;
+    if(track->GetLabel() < 0) return kFALSE;
     AliMCParticle* part = (AliMCParticle*)mcEvent->GetTrack(track->GetLabel()); //Get
     if(!part) return kFALSE;
     if(!part->IsPhysicalPrimary()) { return kFALSE; }
-    std::cout <<part->IsPhysicalPrimary() << std::endl; 
   }
+
 
   return kTRUE;
 }
@@ -471,14 +511,21 @@ void AliAnalysisTaskCorrForFlowMaster::FillCorrelations()
       Double_t assCharge = trackAss->Charge();
       Double_t assEff = 1.0;
 
-      if(!fIsMC && trackAOD->GetID() == trackAODAss->GetID()) continue;
-      if(fIsMC && (Int_t)track->GetUniqueID() == (Int_t)trackAss->GetUniqueID()) {continue;}
+      //if(!fIsMC && trackAOD->GetID() == trackAODAss->GetID()) continue;
+
+      if((Int_t)track->GetUniqueID() == (Int_t)trackAss->GetUniqueID()) {continue;}
 
       //Ref vs ref - fill seperate histogram for the situation were both tracks are from the large ref. range
       if(fPtRefMin<trigPt<fPtRefMax && fPtRefMin<assPt<fPtRefMax && trigPt>assPt){
         if(fUseEfficiency) {
           assEff = GetEff(assPt, 0, assEta);
           if(assEff < 0.001) continue;
+        }
+        if(fUseLikeSign){
+          if(trigCharge*assCharge < 0) continue;
+        }
+        if(fUseUnlikeSign){
+          if(trigCharge*assCharge > 0) continue;
         }
 
         binscontref[0] = trigEta - assEta;
@@ -502,6 +549,13 @@ void AliAnalysisTaskCorrForFlowMaster::FillCorrelations()
       if(fUseEfficiency) {
         assEff = GetEff(assPt, 0, assEta);
         if(assEff < 0.001) continue;
+      }
+
+      if(fUseLikeSign){
+        if(trigCharge*assCharge < 0) continue;
+      }
+      if(fUseUnlikeSign){
+        if(trigCharge*assCharge > 0) continue;
       }
 
 
@@ -575,7 +629,12 @@ void AliAnalysisTaskCorrForFlowMaster::FillCorrelationsMixed()
               assEff = GetEff(assPt, 0, assEta);
               if(assEff < 0.001) continue;
             }
-
+            if(fUseLikeSign){
+              if(trigCharge*assCharge < 0) continue;
+            }
+            if(fUseUnlikeSign){
+              if(trigCharge*assCharge > 0) continue;
+            }
             binscontref[0] = trigEta - assEta;
             binscontref[1] = RangePhi(trigPhi - assPhi);
             //binscont[5] = assPt;
@@ -596,6 +655,12 @@ void AliAnalysisTaskCorrForFlowMaster::FillCorrelationsMixed()
           if(fUseEfficiency) {
             assEff = GetEff(assPt, 0, assEta);
             if(assEff < 0.001) continue;
+          }
+          if(fUseLikeSign){
+            if(trigCharge*assCharge < 0) continue;
+          }
+          if(fUseUnlikeSign){
+            if(trigCharge*assCharge > 0) continue;
           }
 
           binscont[0] = trigEta - assEta;
@@ -830,10 +895,13 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::PrepareTPCTracks(){
   vector<AliAODTrack*> tempVec(0);
   vector<vector<AliAODTrack*>> vecTrack(fPtBinsTrigCharged.size(), tempVec);
   for(Int_t i(0); i < fAOD->GetNumberOfTracks(); i++) {
+    
     AliAODTrack* track = static_cast<AliAODTrack*>(fAOD->GetTrack(i));
     if(!track || !IsTrackSelected(track)) { continue; }
 
     Double_t trackPt = track->Pt();
+
+
 
     if(fVetoJetEvents && trackPt > fJetParticleLowPt) fTracksJets->Add((AliAODTrack*)track);
 
@@ -849,15 +917,25 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::PrepareTPCTracks(){
   for (Int_t i(0); i<vecTrack.size(); i++){
     if(fUseEventBias && vecTrack[i].size()<fNumEventBias){continue;}
     for (Int_t j(0); j<vecTrack[i].size(); j++){
+      fNofTrackGlobal++;
       AliAODTrack* track = vecTrack[i][j];
       if(!track || !IsTrackSelected(track)) { continue; }
       Double_t trackPt = track->Pt();
       binscont[2] = trackPt;
       if(trackPt<fPtMaxTrig && trackPt>fPtMinTrig){
+        track->SetUniqueID((Int_t)fNofEventGlobal*10000+(Int_t)fNofTrackGlobal);
         fhTrigTracks->Fill(binscont,0,1.);
         fTracksTrig->Add(track);
         fNofTracks++;
-        fhPT->Fill(trackPt);
+
+
+
+        if(fCreateQAPlots){
+          fhPT->Fill(trackPt);
+          fhPhi->Fill(track->Phi());
+          fhEta->Fill(track->Eta());
+        }
+        
       }
       
       if(trackPt<fPtMaxAss && trackPt>fPtMinAss){fTracksAss->Add(track);}
@@ -872,24 +950,35 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::PrepareTPCTracks(){
   }
 
   if(fVetoJetEvents){
-    Double_t foundSomething = kFALSE;
+    Bool_t foundjetsinTPC = kFALSE;
     fhEventCounter->Fill("Before Jet Veto",1); //HPC = high pt cut
-    for(Int_t iTrig(0); iTrig < fTracksJets->GetEntriesFast(); iTrig++){
+    
+    for(Int_t iTrig=0; iTrig < fTracksJets->GetEntriesFast(); iTrig++){
       AliAODTrack* trackTrig = (AliAODTrack*)fTracksJets->At(iTrig);
       if(!trackTrig) continue;
       Double_t trigPhi = trackTrig->Phi();
 
-      for(Int_t iAss(iTrig+1); iAss < fTracksJets->GetEntriesFast()+1; iAss++){
+      for(Int_t iAss=iTrig+1; iAss < fTracksJets->GetEntriesFast(); iAss++){
         AliAODTrack* trackAss = (AliAODTrack*)fTracksJets->At(iAss);
         if(!trackAss) continue;
         Double_t assPhi = trackAss->Phi();
 
         Double_t deltaPhi = RangePhi(trigPhi - assPhi);
-        if(TMath::Abs(deltaPhi - TMath::Pi()) < 0.5) foundSomething = kTRUE;
+        if(TMath::Abs(deltaPhi - TMath::Pi()) < fJetvetoselectionval) foundjetsinTPC = kTRUE;//fJetvetoselectionval= 0.5
       }
     }
-    if(!foundSomething){ fhEventCounter->Fill("After Jet Veto",1); }
-    else { return kFALSE; }
+    
+      if(fselectjetsinTPC == kTRUE) {//select events with back to back jets in TPC
+      if(foundjetsinTPC == kFALSE) return kFALSE;//reject
+    }
+
+
+    if(fselectjetsinTPC == kFALSE) {//reject events with back to back jets in TPC
+      if(foundjetsinTPC == kTRUE) return kFALSE;//reject
+    }
+
+
+    fhEventCounter->Fill("After Jet Veto",1);
   }
 
 
@@ -908,6 +997,7 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::PrepareMCTracks(){
   Double_t binscont[3] = {fPVz, fSampleIndex, 0.};
 
   for(Int_t i(0); i < mcEvent->GetNumberOfTracks(); i++) {
+    
     AliMCParticle* part = (AliMCParticle*)mcEvent->GetTrack(i);
     if(!fIsTPCgen) continue;
     if(part->Charge()==0.) continue;
@@ -927,10 +1017,11 @@ Bool_t AliAnalysisTaskCorrForFlowMaster::PrepareMCTracks(){
   for (Int_t i(0); i<vecTrack.size(); i++){
     if(fUseEventBias && vecTrack[i].size()<fNumEventBias){continue;}
     for (Int_t j(0); j<vecTrack[i].size(); j++){
+      fNofTrackGlobal++;
       AliMCParticle* track = vecTrack[i][j];
       Double_t trackPt = track->Pt();
       binscont[2] = trackPt;
-      track->SetUniqueID((Int_t)i*10000+j);
+      track->SetUniqueID((Int_t)fNofEventGlobal*10000+(Int_t)fNofTrackGlobal);
       if(trackPt<fPtMaxTrig && trackPt>fPtMinTrig){
 
         fhTrigTracks->Fill(binscont,0,1.);

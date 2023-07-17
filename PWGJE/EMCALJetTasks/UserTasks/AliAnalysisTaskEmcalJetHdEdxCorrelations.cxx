@@ -278,16 +278,16 @@ namespace PWGJE
       UInt_t cifras = 0; // bit coded, see GetDimParams() below
       if (fDoLessSparseAxes)
       {
-        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15 | 1 << 16;
+        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7 | 1<<8 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15;
       }
       else
       {
-        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15 | 1 << 16;
+        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7 | 1 << 8 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15;
         ;
       }
       if (fForceBeamType == AliAnalysisTaskEmcal::kpp)
       {
-        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15 | 1 << 16;
+        cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 8 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14 | 1 << 15;
       }
       fhnJH = NewTHnSparseF("fhnJH", cifras);
       fhnJH->Sumw2();
@@ -300,7 +300,7 @@ namespace PWGJE
         // analysis if so desired.
         if (fDoLessSparseAxes)
         {
-          cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7;
+          cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 7 | 1 <<8 ;
         }
         else
         {
@@ -308,7 +308,7 @@ namespace PWGJE
         }
         if (fForceBeamType == AliAnalysisTaskEmcal::kpp)
         {
-          cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4;
+          cifras = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 8;
         }
         fhnMixedEvents = NewTHnSparseF("fhnMixedEvents", cifras);
         fhnMixedEvents->Sumw2();
@@ -316,10 +316,10 @@ namespace PWGJE
       }
 
       // Trigger THnSparse
-      cifras = 1 << 0 | 1 << 1 | 1 << 7;
+      cifras = 1 << 0 | 1 << 1 | 1 << 7 | 1<< 8;
       if (fForceBeamType == AliAnalysisTaskEmcal::kpp)
       {
-        cifras = 1 << 0 | 1 << 1;
+        cifras = 1 << 0 | 1 << 1 | 1 << 8;
       }
       fhnTrigger = NewTHnSparseF("fhnTrigger", cifras);
       fhnTrigger->Sumw2();
@@ -450,9 +450,6 @@ namespace PWGJE
       // NOTE: Clusters are never used directly in the task, so the container is neither created not retrieved
       // Retrieve tracks
       AliTrackContainer *tracks = static_cast<AliTrackContainer *>(GetParticleContainer("tracksForCorrelations"));
-      tracks->AddAODFilterBit((UInt_t)96);
-      tracks->AddAODFilterBit((UInt_t)16);
-      tracks->AddAODFilterBit((UInt_t)768);
       if (!tracks)
       {
         AliError(Form("%s: Unable to retrieve tracks!", GetName()));
@@ -473,6 +470,11 @@ namespace PWGJE
 
       // Get z vertex
       Double_t zVertex = fVertex[2];
+      if(zVertex < -10 || zVertex > 10)
+      {
+        AliError(Form("%s: Rejecting event because zVertex = %f is out of range!", GetName(), zVertex));
+        return kFALSE;
+      }
       // Flags
       Bool_t isBiasedJet = kFALSE;
       Bool_t leadJet = kFALSE;
@@ -597,12 +599,12 @@ namespace PWGJE
 
           if (fBeamType != kpp)
           {
-            const double triggerInfo[] = {eventActivity, jetPt, epAngle};
+            const double triggerInfo[] = {eventActivity, jetPt, epAngle, zVertex};
             fhnTrigger->Fill(triggerInfo);
           }
           else
           {
-            const double triggerInfo[] = {eventActivity, jetPt};
+            const double triggerInfo[] = {eventActivity, jetPt, zVertex};
             fhnTrigger->Fill(triggerInfo);
           }
         }
@@ -634,13 +636,13 @@ namespace PWGJE
               Double_t pionTOFnSigma;
               Double_t protonTOFnSigma;
               Double_t kaonTOFnSigma;
-              Double_t electronTOFnSigma;
+
 
               pionTPCnSigma = pidResponse->NumberOfSigmasTPC(vTrack, (AliPID::EParticleType)2);
               pionTOFnSigma = pidResponse->NumberOfSigmasTOF(vTrack, (AliPID::EParticleType)2);
               protonTOFnSigma = pidResponse->NumberOfSigmasTOF(vTrack, (AliPID::EParticleType)4);
               kaonTOFnSigma = pidResponse->NumberOfSigmasTOF(vTrack, (AliPID::EParticleType)3);
-              electronTOFnSigma = pidResponse->NumberOfSigmasTOF(vTrack, (AliPID::EParticleType)0);
+
 
               // Double_t TPCsignal = aodTrack->GetTPCsignal();
 
@@ -662,18 +664,18 @@ namespace PWGJE
                 {
                   if (fDoLessSparseAxes)
                   { // check if we want all dimensions
-                    double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ epAngle, trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma, electronTOFnSigma};
+                    double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ epAngle, zVertex, trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma};
                     FillHist(fhnJH, triggerEntries, 1.0 / efficiency);
                   }
                   else
                   {
-                    double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ epAngle, zVertex, deltaR, trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma, electronTOFnSigma};
+                    double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ epAngle, zVertex, deltaR, trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma};
                     FillHist(fhnJH, triggerEntries, 1.0 / efficiency);
                   }
                 }
                 else
                 {
-                  double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma, electronTOFnSigma};
+                  double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, /*static_cast<Double_t>(leadJet),*/ zVertex, trackEta, pionTPCnSigma, pionTOFnSigma, protonTOFnSigma, kaonTOFnSigma};
                   FillHist(fhnJH, triggerEntries, 1.0 / efficiency);
                 }
               }
@@ -687,7 +689,7 @@ namespace PWGJE
 
           } // jet pt cut
         }   // jet loop
-
+      }
         // Prepare to do event mixing
 
         // create a list of reduced objects. This speeds up processing and reduces memory consumption for the event pool
@@ -813,7 +815,7 @@ namespace PWGJE
                     {
                       if (fDoLessSparseAxes)
                       { // check if we want all the axis filled
-                        double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, epAngle};
+                        double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, epAngle, zVertex};
                         FillHist(fhnMixedEvents, triggerEntries, 1. / (nMix * efficiency), fNoMixedEventJESCorrection);
                       }
                       else
@@ -824,7 +826,7 @@ namespace PWGJE
                     }
                     else
                     {
-                      double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi};
+                      double triggerEntries[] = {eventActivity, jetPt, track.Pt(), deltaEta, deltaPhi, zVertex};
                       FillHist(fhnMixedEvents, triggerEntries, 1. / (nMix * efficiency), fNoMixedEventJESCorrection);
                     }
                   }
@@ -846,8 +848,7 @@ namespace PWGJE
 
         return kTRUE;
       }
-      return kFALSE;
-    }
+
     /**
      * Determine if a jet passes the track or cluster bias and is therefore a "biased" jet.
      *
