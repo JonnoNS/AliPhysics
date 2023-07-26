@@ -67,6 +67,7 @@ public:
   
   void SetFillEncMC(Bool_t t) { fDoFillEncMC = t; } //For MC
   void SetpTcorrect(Int_t c) {fpTcorr = c;}
+  void SetPairCut(Int_t c) {fpaircut = c;}
 
 protected:
   Bool_t RetrieveEventObjects();
@@ -126,6 +127,7 @@ Bool_t fDoFillEncMC;      ///< to fill the matched mc plane
 //  Bool_t fMatch; ///< do the matching in the task
 
 Int_t fpTcorr; ///<flag for pT migration checks
+Int_t fpaircut; ///<flag for pT pair cut
 
 //Histograms
   TH1D *jet_pt_hist; //!<! initializing histogram with jet pt
@@ -185,13 +187,20 @@ Int_t fpTcorr; ///<flag for pT migration checks
   TH2D *JES; //!<! jet energy scale
   TH2D *JES_scaled; //!<! jet energy scale for scaled pt_det
   TH2D *JER; //!<! jet energy resolution
+
+  TH3D *pair_det_EEC;//!<! histogram for computing pair efficiency at det level
+  TH3D *pair_tru_EEC;//!<! histogram for computing pair efficiency at truth level
+   
+  TH3D *pair_det_E3C;//!<! histogram for computing pair efficiency at det level
+  TH3D *pair_tru_E3C;//!<! histogram for computing pair efficiency at truth level
+  
 private:
   AliAnalysisTaskJetsEEC(
       const AliAnalysisTaskJetsEEC &); // not implemented
   AliAnalysisTaskJetsEEC &
   operator=(const AliAnalysisTaskJetsEEC &); // not implemented
 
-  ClassDef(AliAnalysisTaskJetsEEC, 35) //change this to 35
+  ClassDef(AliAnalysisTaskJetsEEC, 37) //change this to 37
 };
 #endif
 

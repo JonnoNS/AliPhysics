@@ -55,6 +55,7 @@ void AddTask_MesonJetCorr_Conv(
   bool setPi0Unstable = false,
   bool enableAddBackground = false,
   bool enableRadiusDep = false,
+  int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
   // subwagon config
   TString additionalTrainConfig = "2" // additional counter for trainconfig + special settings
 )
@@ -192,33 +193,38 @@ if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << end
   } else if (trainConfig == 3) {
     cuts.AddCutPCM("00010103", "0dm00009f9730000dge0404000", "2152103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, mixed jet back
   } else if (trainConfig == 6) {
-    cuts.AddCutPCM("0009c103", "0dm00009f9730000dge0404000", "2s52103500000000"); // Jet-low trigg in-Jet mass cut around pi0: 0.1-0.15, rotation back
+    cuts.AddCutPCM("000fc103", "0dm00009f9730000dge0404000", "2s52103500000000"); // Jet-low trigg in-Jet mass cut around pi0: 0.1-0.15, rotation back
   } else if (trainConfig == 7) {
-    cuts.AddCutPCM("0009b103", "0dm00009f9730000dge0404000", "2s52103500000000"); // Jet-high trigg in-Jet mass cut around pi0: 0.1-0.15, rotation back
+    cuts.AddCutPCM("000fb103", "0dm00009f9730000dge0404000", "2s52103500000000"); // Jet-high trigg in-Jet mass cut around pi0: 0.1-0.15, rotation back
   } else if (trainConfig == 16) { // same as 6 but with mixed jet back
-    cuts.AddCutPCM("0009c103", "0dm00009f9730000dge0404000", "2152103500000000"); // Jet-low trigg in-Jet mass cut around pi0: 0.1-0.15, mixed jet back
+    cuts.AddCutPCM("000fc103", "0dm00009f9730000dge0404000", "2152103500000000"); // Jet-low trigg in-Jet mass cut around pi0: 0.1-0.15, mixed jet back
   } else if (trainConfig == 17) { // same as 7 but with mixed jet back
-    cuts.AddCutPCM("0009b103", "0dm00009f9730000dge0404000", "2152103500000000"); // Jet-high trigg in-Jet mass cut around pi0: 0.1-0.15, mixed jet back
+    cuts.AddCutPCM("000fb103", "0dm00009f9730000dge0404000", "2152103500000000"); // Jet-high trigg in-Jet mass cut around pi0: 0.1-0.15, mixed jet back
   
   } else if (trainConfig == 20) {
     cuts.AddCutPCM("00010103", "0dm00009f9730000dge0404000", "es52103500000000"); // decay daughters inside jet
   } else if (trainConfig == 21) {
-    cuts.AddCutPCM("0009c103", "0dm00009f9730000dge0404000", "es52103500000000"); // decay daughters inside jet
-    cuts.AddCutPCM("0009b103", "0dm00009f9730000dge0404000", "es52103500000000"); // decay daughters inside jet
+    cuts.AddCutPCM("000fc103", "0dm00009f9730000dge0404000", "es52103500000000"); // decay daughters inside jet
+    cuts.AddCutPCM("000fb103", "0dm00009f9730000dge0404000", "es52103500000000"); // decay daughters inside jet
     
   // configs with TRD/ITS conversion requirement
   } else if (trainConfig == 22) {
     cuts.AddCutPCM("00010103", "0dm00009f9730000dge0474000", "2s52103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
   } else if (trainConfig == 23) {
-    cuts.AddCutPCM("0009c103", "0dm00009f9730000dge0474000", "2s52103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
+    cuts.AddCutPCM("000fc103", "0dm00009f9730000dge0474000", "2s52103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
   } else if (trainConfig == 24) {
-    cuts.AddCutPCM("0009b103", "0dm00009f9730000dge0474000", "2s52103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
+    cuts.AddCutPCM("000fb103", "0dm00009f9730000dge0474000", "2s52103500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
   
   // qt cut variations
   } else if (trainConfig == 25) {
     cuts.AddCutPCM("00010103", "0dm00009f97300003ge0404000", "2s52103500000000"); // qT max 0.05 1D
     cuts.AddCutPCM("00010103", "0dm00009f97300002ge0404000", "2s52103500000000"); // qT max 0.06 2D
     cuts.AddCutPCM("00010103", "0dm00009f97300009ge0404000", "2s52103500000000"); // qT max 0.03 2D
+
+
+  // configs with eta < 0.5
+  } else if (trainConfig == 30) {
+    cuts.AddCutPCM("00010103", "0dm00009f9730000dge0404000", "2s52403500000000"); // in-Jet mass cut around pi0: 0.1-0.15, rotation back
   
 
   //--- Systamtic variations for INT7 trigger
@@ -410,6 +416,7 @@ if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << end
   if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   cout << "Now setting meson kind: " << meson << endl;
   task->SetMesonKind(meson);
+  task->SetMesonZPt(runOnlyZPt);
   task->SetIsConv(true);
   task->SetJetContainerAddName(nameJetFinder);
   task->SetEventCutList(numberOfCuts, EventCutList);

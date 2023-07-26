@@ -27,6 +27,8 @@
 #include <vector>
 #include "TH1.h"
 #include "TH2.h"
+#include "TF1.h"
+#include "TF2.h"
 #include "THnSparse.h"
 
 class MatrixHandler4D
@@ -53,6 +55,12 @@ class MatrixHandler4D
   double getValueForBinIndexMesonY(const int index) const;
   double getValueForBinIndexJetY(const int index) const;
 
+
+  std::vector<double> getBinsMesonX() const { return vecBinsMesonX; }
+  std::vector<double> getBinsMesonY() const { return vecBinsMesonY; }
+  std::vector<double> getBinsJetX() const { return vecBinsJetX; }
+  std::vector<double> getBinsJetY() const { return vecBinsJetY; }
+
   void Fill(double valJetX, double valJetY, double valMesonX, double valMesonY, double val = 1);
 
   void AddBinContent(double valJetX, double valJetY, double valMesonX, double valMesonY, double val = 1, double err = 1);
@@ -63,6 +71,11 @@ class MatrixHandler4D
 
   TH2F* GetTH2(const char* name = "hSparseResponse_Clone");
   TH2F* GetResponseMatrix(int binX, int binY, const char* name = "dummy");
+
+  void WeightResponseMatrix(TF1* funcMeson = nullptr, TF1* funcJet = nullptr);
+  void WeightResponseMatrix(TF2* func);
+
+
 
  private:
   bool useTHNSparese = false;
@@ -76,7 +89,7 @@ class MatrixHandler4D
   TH1F* h1dMeson = nullptr;
   THnSparseF* hSparseResponse = nullptr;
 
-  ClassDef(MatrixHandler4D, 3)
+  ClassDef(MatrixHandler4D, 4)
 };
 
 

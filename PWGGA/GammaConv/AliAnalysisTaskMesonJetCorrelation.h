@@ -130,6 +130,14 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   void SetForcePi0Unstable(bool tmp) { fUnsetStablePi0 = tmp; }
   void SetUseMixedBackAdd(bool tmp) { fUseMixedBackAdd = tmp; }
   void SetDoRadiusDependence(bool tmp) { fDoRadiusDep = tmp; }
+  void SetMesonZPt(int tmp)
+  {
+    if(tmp == 1){
+      fDoAnalysisZ = false;
+    } else if(tmp == 2){
+      fDoAnalysisPt = false;
+    }
+  }
 
   void SetEventCutList(int nCuts,
                        TList* CutArray)
@@ -239,6 +247,8 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   bool fUnsetStablePi0;                                 // flag to decide if pi0 need to be reset to Unstable particles
   bool fUseMixedBackAdd;                                // flag to enable a histogram for the mixed jet background in addition to the rotation background. This is to save memory and CPU (As otherwise a completely new wagon would be needed)
   bool fDoRadiusDep;                                    // flag to enable radius dependent histograms
+  bool fDoAnalysisPt;                                   // flag to enable filling of pt dependent histograms
+  bool fDoAnalysisZ;                                    // flag to enable filling of z dependent histograms
   //-------------------------------
   // conversions
   //-------------------------------
@@ -365,6 +375,7 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   //-------------------------------
   std::vector<TH2F*> fHistoInvMassVsPt;          //! vector of histos with inv. mass vs pt
   std::vector<TH2F*> fHistoInvMassVsPt_Incl;     //! vector of histos with inv. mass vs pt for all mesons (no in-jet criterium)
+  std::vector<TH2F*> fHistoInvMassVsZ;           //! vector of histos with inv. mass vs z
   std::vector<TH2F*> fHistoJetPtVsFrag;          //! vector of histos for jet pt vs meson-z
   std::vector<TH2F*> fHistoInvMassVsPtMassCut;   //! vector of histos with inv. mass vs. pT after cut
   std::vector<TH2F*> fHistoInvMassVsPtMassCutSB; //! vector of histos with inv. mass vs. pT after cut in Sideband
@@ -510,7 +521,7 @@ class AliAnalysisTaskMesonJetCorrelation : public AliAnalysisTaskSE
   AliAnalysisTaskMesonJetCorrelation(const AliAnalysisTaskMesonJetCorrelation&);            // Prevent copy-construction
   AliAnalysisTaskMesonJetCorrelation& operator=(const AliAnalysisTaskMesonJetCorrelation&); // Prevent assignment
 
-  ClassDef(AliAnalysisTaskMesonJetCorrelation, 19);
+  ClassDef(AliAnalysisTaskMesonJetCorrelation, 21);
 };
 
 #endif
