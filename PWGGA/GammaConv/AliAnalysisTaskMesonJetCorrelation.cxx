@@ -617,10 +617,10 @@ void AliAnalysisTaskMesonJetCorrelation::UserCreateOutputObjects()
   } // GetV0Reader
 
   // Initialize Jet reader
-  if (strcmp(fAddNameConvJet.Data(), "")) printf("fAddNameConvJet is empty\n\n");
+  if (strcmp(fAddNameConvJet.Data(), "") == 0) printf("fAddNameConvJet is empty\n\n");
   else printf("fAddNameConvJet is not empty: %s\n", fAddNameConvJet.Data());
 
-  if (strcmp(fAddNameConvJet.Data(), " ")) printf("fAddNameConvJet is just a space\n");
+  if (strcmp(fAddNameConvJet.Data(), " ") == 0) printf("fAddNameConvJet is just a space\n");
   else printf("fAddNameConvJet is not just a space: %s\n", fAddNameConvJet.Data());
 
   printf("AliAnalysisTaskMesonJetCorrelation::UserCreateOutputObjects() - fAddNameConvJet = %s\n", fAddNameConvJet.Data());
@@ -629,6 +629,7 @@ void AliAnalysisTaskMesonJetCorrelation::UserCreateOutputObjects()
     printf(Form("ERROR: No AliAnalysisTaskConvJet%s\n", fAddNameConvJet.EqualTo("") == true ? "" : Form("_%s",fAddNameConvJet.Data())));
     return;
   } // GetV0Reader
+
 
   fEventMix = new EventMixPoolMesonJets();
 
@@ -1925,8 +1926,10 @@ void AliAnalysisTaskMesonJetCorrelation::CallSumw2ForLists(TList* l)
 
 //________________________________________________________________________
 void AliAnalysisTaskMesonJetCorrelation::InitJets()
-{
+{ 
+  //printf("InitJets::Line 1929\n");
   fVectorJetPt = fConvJetReader->GetVectorJetPt();
+  //printf("InitJets::Line 1931\n");
   fVectorJetPx = fConvJetReader->GetVectorJetPx();
   fVectorJetPy = fConvJetReader->GetVectorJetPy();
   fVectorJetPz = fConvJetReader->GetVectorJetPz();
@@ -1936,7 +1939,7 @@ void AliAnalysisTaskMesonJetCorrelation::InitJets()
   fVectorJetNEF = fConvJetReader->GetVectorJetNEF();
   fVectorJetNch = fConvJetReader->GetVectorJetNtracks();
   fVectorJetNclus = fConvJetReader->GetVectorJetNclus();
-
+  //printf("InitJets::Line 1941\n");
   fVectorJetEtaPerp = fConvJetReader->GetVectorJetEta();
   for (auto& eta : fVectorJetEtaPerp) {
     eta *= -1;
@@ -1948,7 +1951,7 @@ void AliAnalysisTaskMesonJetCorrelation::InitJets()
       phi -= TMath::Pi();
     }
   }
-
+  //printf("InitJets::Line 1954\n");
   if (fIsMC > 0) {
     if (fIsMC) {
       if (!fAODMCTrackArray)
@@ -2222,18 +2225,20 @@ void AliAnalysisTaskMesonJetCorrelation::UserExec(Option_t*)
     }
     
     if(fUseCentralEventSelection){
+      //printf("AnalysistaskMJC::Line 2225\n");
       if(!fAliEventCuts.AcceptEvent(fInputEvent)){
         continue;
       }
     }
+    //printf("AnalysistaskMJC::Line 2230\n");
 
     // Jets need to be initialized before the ProcessMCParticles because they are needed in ProcessAODMCParticles
     if(fLocalDebugFlag) {printf("InitJets\n");}
     InitJets();
-
+    //printf("AnalysistaskMJC::Line 2235\n");
     // reset double counting vector
     fMesonDoubleCount.clear();
-
+    //printf("AnalysistaskMJC::Line 2238\n");
     if (eventNotAccepted != 0 && eventQuality != 4) {
       fHistoNEvents[iCut]->Fill(eventNotAccepted, fWeightJetJetMC); // Check Centrality, PileUp, SDD and V0AND --> Not Accepted => eventQuality = 1
       if (fIsMC > 1)

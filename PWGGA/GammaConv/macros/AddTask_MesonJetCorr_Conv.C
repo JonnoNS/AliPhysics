@@ -57,11 +57,11 @@ void AddTask_MesonJetCorr_Conv(
   bool enableRadiusDep = false,
   int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
   // subwagon config
-  TString additionalTrainConfig = "2" // additional counter for trainconfig + special settings
+  TString additionalTrainConfig = "3_JETJet" // additional counter for trainconfig + special settings
 )
 {
 
-  int localDebug = 1;
+  int localDebug = 0;
 
   AliCutHandlerPCM cuts(13);
   cout << "INFO: in AddTask_MesonJetCorr_Conv: " << "additionalTrainConfig is: " << additionalTrainConfig << endl;
