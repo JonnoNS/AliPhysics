@@ -214,6 +214,10 @@ class AliAnalysisTaskCharmingFemto : public AliAnalysisTaskSE {
 
   // follow the convention of AliFemtoDreamBaseParticle 
   int GetBuddyOrigin(AliAODMCParticle *mcPart) {
+    if (!mcPart || !fIsMC) {
+      return AliFemtoDreamBasePart::PartOrigin::kUnknown;
+    }
+
     bool isPhysPrim = mcPart->IsPhysicalPrimary();
     bool isSec = mcPart->IsSecondaryFromWeakDecay();
     bool isMat = mcPart->IsSecondaryFromMaterial();
@@ -232,6 +236,10 @@ class AliAnalysisTaskCharmingFemto : public AliAnalysisTaskSE {
   }
 
   bool SelectBuddyOrigin(AliAODMCParticle *mcPart) {
+    if (!mcPart || !fIsMC) {
+      return true;
+    }
+
     if(fBuddyOrigin==0) {
       return true;
     }
@@ -266,6 +274,10 @@ class AliAnalysisTaskCharmingFemto : public AliAnalysisTaskSE {
     fDmesonOrigin = origin;
   }
   bool SelectDmesonOrigin(TClonesArray* arrayMC, AliAODMCParticle *mcPart) {
+    if (!mcPart || !fIsMC) {
+      return true;
+    }
+
     if(fDmesonOrigin==0) {
       fDoDorigPlots=true;
       return true;
@@ -447,6 +459,11 @@ class AliAnalysisTaskCharmingFemto : public AliAnalysisTaskSE {
   TH2F *fHistDminusMCtruthmotherPDG;  //!
   TH2F *fHistDminusMCtruthQuarkOrigin;     //!
 
+  TH1F *fHistPercentileV0MAllEvents;       //! histogram with V0M percentile for each event
+  TH1F *fHistPercentileV0MEventsWithD;     //! histogram with V0M percentile for events with D candidates
+  TH1F *fHistNtrackletsAllEvents;          //! histogram with Ntracklets for each event
+  TH1F *fHistNtrackletsEventsWithD;        //! histogram with Ntracklets for events with D candidates
+
   // HF data members
   int fDecChannel;                                         // HF decay channel
   AliRDHFCuts* fRDHFCuts;                                  // HF cut object
@@ -484,7 +501,7 @@ class AliAnalysisTaskCharmingFemto : public AliAnalysisTaskSE {
   std::vector<std::vector<double> > fMLScoreCuts;          // score cuts used in case application of ML model is done in MLSelector task   
   std::vector<std::vector<std::string> > fMLOptScoreCuts;  // score cut options (lower, upper) used in case application of ML model is done in MLSelector task   
 
-ClassDef(AliAnalysisTaskCharmingFemto, 20)
+ClassDef(AliAnalysisTaskCharmingFemto, 21)
 };
 
 #endif
