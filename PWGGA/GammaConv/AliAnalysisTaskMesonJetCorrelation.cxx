@@ -3098,6 +3098,7 @@ void AliAnalysisTaskMesonJetCorrelation::CalculateBackgroundMix()
 
             if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->MesonIsSelected(backgroundCandidate.get(), false, ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetEtaShift(), cellID, ((AliAODConversionPhoton*)currentEventGamma)->GetLeadingCellID())) {
               // Fill histograms here
+              printf("filling background histograms, line 3101. fUseMixedBackAdd = %d\n", fUseMixedBackAdd);
               FillInvMassBackHistograms(backgroundCandidate.get(), false);
             }
           }
@@ -3192,6 +3193,7 @@ void AliAnalysisTaskMesonJetCorrelation::CalculateBackgroundSwapp()
             if (!(((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->CheckDistanceToBadChannelSwapping(cellIDRotatedPhoton[iSwapped], fInputEvent, ((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->GetDistanceToBorderForBg())) && swappedGammas[iSwapped]->P() > ((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->GetMinClusterEnergy()) {
               if (((AliConversionMesonCuts*)fMesonCutArray->At(fiCut))->MesonIsSelected(backgroundCandidate.get(), false, ((AliConvEventCuts*)fEventCutArray->At(fiCut))->GetEtaShift(), cellIDRotatedPhoton[iSwapped], ((AliAODConversionPhoton*)currentEventGoodV0Temp3)->GetLeadingCellID())) {
                 // Fill histograms here
+                printf("filling background histograms, line 3196. fUseMixedBackAdd = %d\n", fUseMixedBackAdd);
                 FillInvMassBackHistograms(backgroundCandidate.get(), true);
               }
             }
@@ -3313,22 +3315,26 @@ void AliAnalysisTaskMesonJetCorrelation::FillInvMassBackHistograms(AliAODConvers
 
   // Here, a special case is filled in case of both rotation and mixed background are used
   if(!isRotBack && fUseMixedBackAdd){
+    //printf("Both rotation and mixed background are used. \n");
     if(fDoAnalysisPt){ fRespMatrixHandlerMesonBackAddInvMassVsPt[fiCut]->Fill(ptJet, 0.5, backgroundCandidate->M(), backgroundCandidate->Pt(), fWeightJetJetMC);} // Inv Mass vs. meson Pt in Jet Pt_rec bins. Needed to subtract background in the Pt-distribution
     if(fDoAnalysisZ){ fRespMatrixHandlerMesonBackAddInvMassVsZ[fiCut]->Fill(ptJet, 0.5, backgroundCandidate->M(), z, fWeightJetJetMC);}                          // Inv Mass vs. Z in Jet Pt_rec bins. Needed to subtract background in the Z-distribution
     // if(fDoRadiusDep){
     //   fRespMatrixHandlerMesonBackAddPtInvMassRadius[fiCut]->Fill(vecFillInvMassPtR, vecFillJetPt, fWeightJetJetMC);
     // }
   } else {
+    //printf("Only rotation background is used \n");
     if(fDoAnalysisPt){fRespMatrixHandlerMesonBackInvMassVsPt[fiCut]->Fill(ptJet, 0.5, backgroundCandidate->M(), backgroundCandidate->Pt(), fWeightJetJetMC);} // Inv Mass vs. meson Pt in Jet Pt_rec bins. Needed to subtract background in the Pt-distribution
     if(fDoAnalysisZ){fRespMatrixHandlerMesonBackInvMassVsZ[fiCut]->Fill(ptJet, 0.5, backgroundCandidate->M(), z, fWeightJetJetMC);}                          // Inv Mass vs. Z in Jet Pt_rec bins. Needed to subtract background in the Z-distribution
     if(fDoRadiusDep){
       fRespMatrixHandlerMesonBackPtInvMassRadius[fiCut]->Fill(vecFillInvMassPtR, vecFillJetPt, fWeightJetJetMC);
     }
+  }
     //_______ Standard Inv Mass vs. pT background histo _______________
     if(fDoAnalysisPt){
+      //printf("fDoAnalysisPt is true, now filling fHistoInvMassVsPtBack[fiCut] \n");
       fHistoInvMassVsPtBack[fiCut]->Fill(backgroundCandidate->M(), backgroundCandidate->Pt(), fWeightJetJetMC);
     }
-  }
+    //else printf("fDoAnalysisPt is false, not filling fHistoInvMassVsPtBack[fiCut] \n");
 
 }
 

@@ -55,7 +55,8 @@ void AddTask_MesonJetCorr_Conv(
   bool setPi0Unstable = false,
   bool enableAddBackground = false,
   bool enableRadiusDep = false,
-  int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
+  //int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
+  // Commented previous line because legotrainhelpers uses an older version of this file
   // subwagon config
   TString additionalTrainConfig = "3_JETJet" // additional counter for trainconfig + special settings
 )
@@ -420,7 +421,7 @@ if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << end
   if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << endl;
   cout << "Now setting meson kind: " << meson << endl;
   task->SetMesonKind(meson);
-  task->SetMesonZPt(runOnlyZPt);
+  //task->SetMesonZPt(runOnlyZPt);
   task->SetIsConv(true);
   task->SetJetContainerAddName(nameJetFinder);
   task->SetEventCutList(numberOfCuts, EventCutList);

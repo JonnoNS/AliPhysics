@@ -53,7 +53,8 @@ void AddTask_MesonJetCorr_Calo(
   bool setPi0Unstable = false,
   bool enableAddBackground = false,
   bool enableRadiusDep = false,
-  int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
+  //int runOnlyZPt = 0,           // if 0, bot pt and z histograms will be filled, if 1, pt histograms will be filled, if 2, only z histograms will be filled
+  // Commented previous line out because the legotrain_helper is an older version and does not support this option
   // subwagon config
   TString additionalTrainConfig = "0" // additional counter for trainconfig
 
@@ -519,7 +520,7 @@ void AddTask_MesonJetCorr_Calo(
   }
 
   task->SetMesonKind(meson);
-  task->SetMesonZPt(runOnlyZPt);
+  //task->SetMesonZPt(runOnlyZPt);
   task->SetIsCalo(true);
   if(additionalTrainConfig.Contains("JET")){task->SetJetContainerAddName(nameJetFinder);}
   task->SetEventCutList(numberOfCuts, EventCutList);
