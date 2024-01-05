@@ -205,15 +205,15 @@ void AliAnalysisTaskSA::UserCreateOutputObjects()
   fHisteventmult            = new TH1F("fHisteventmult", "Event multiplicity", 10,0.0,10.0);       
   fHistVz            = new TH1F("fHistZVertex", "Z vertex distribution", 100,-10,10);       
   fHistCentrality = new TH1F("fHistCentrality", "Centrality distribution", 100,0,100);
-
-  /*
-  Int_t bins[4]={90, 18, 200, 20};
-  Double_t xmin[4]={0.6, 0.0, 0.0, -1.0};
-  Double_t xmax[4]={1.5, 90.0, 20.0, 1.0};
-  */
+  
   Int_t bins[4]={90, 10, 200, 5};
   Double_t xmin[4]={0.6, 0.0, 0.0, 0.0};
   Double_t xmax[4]={1.5, 100.0, 20.0, 1.0};
+  
+  /*Int_t bins[3]={90, 100, 200};
+  Double_t xmin[3]={0.6, 0.0, 0.0};
+  Double_t xmax[3]={1.5, 100.0, 20.0};*/
+  
   kstarUnlike = new THnSparseD("kstarUnlike", "Unlike histogram", 4, bins, xmin, xmax);
   kstarLike = new THnSparseD("kstarLike", "Like histogram", 4, bins, xmin, xmax);
   //kstarposLike = new THnSparseD("kstarposLike", "Pos Like histogram", 3, bins, xmin, xmax);
@@ -638,7 +638,7 @@ Bool_t AliAnalysisTaskSA::GoodEvent(const AliVVertex *vertex)
     }
     */
 
-    fEventCuts.SetRejectTPCPileupWithITSTPCnCluCorr(kTRUE); 
+    //fEventCuts.SetRejectTPCPileupWithITSTPCnCluCorr(kTRUE); 
 
 
   return kTRUE;
@@ -763,7 +763,7 @@ Double_t AliAnalysisTaskSA::CosThetaStar(TLorentzVector mother, TLorentzVector d
   TVector3 BeamVect;
   BeamVect.SetXYZ(0,0,1);
   TVector3 momentumM(mother.Vect());
-  TVector3 normal(mother.Y() / momentumM.Mag(), -mother.X() / momentumM.Mag(), 0.0);
+  TVector3 normal(mother.Y() / momentumM.Pt(), -mother.X() / momentumM.Pt(), 0.0);
 
   // Computes components of beta
   Double_t betaX = -mother.X() / mother.E();

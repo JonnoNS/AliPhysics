@@ -1,6 +1,8 @@
 AliAnalysisTaskBEpp13TeV* AddTaskBEpp13TeV(
   TString	taskName = "beauty",
-  bool		isMC = false,
+  TString	fDataType = "data",
+  TString	fPeriod = "16period",
+  TString	fPass = "pass1",
   bool		isPP = true,
   double	multRef = 11.7,
   int		minTPCnCrossedRow = 70,
@@ -13,13 +15,20 @@ AliAnalysisTaskBEpp13TeV* AddTaskBEpp13TeV(
   double	tpcPIDhigh = 3,
   double	tofPID = 3)
 {
+  
   //TString taskName = "beauty";
   //TString itsLayer = citsLayer;
   printf("=======================================\n");
   printf("==========ADD TASK PARAMETERS==========\n");
   printf("=======================================\n");
   printf("Task name: %s \n", taskName.Data());
-  printf("MC Flag: %d \n",isMC);
+  printf("Data type: %s \n", fDataType.Data());
+  printf("Period info: %s \n", fPeriod.Data());
+  printf("Reconstruction info: %s \n", fPass.Data());
+  TString strMCflag;
+  if(fDataType.EqualTo("data")) strMCflag = "False";
+  else strMCflag = "True";
+  printf("MC Flag: %s \n", strMCflag.Data());
   printf("Min. TPC crossed raw: %d \n", minTPCnCrossedRow);
   printf("Min. TPC clusters for PID: %d \n", minTPCnClsPID);
   printf("Max. TPC chi2/ndf: %.1f \n", maxTPCchi2);
@@ -43,7 +52,7 @@ AliAnalysisTaskBEpp13TeV* AddTaskBEpp13TeV(
   // now we create an instance of your task
   AliAnalysisTaskBEpp13TeV* task = new AliAnalysisTaskBEpp13TeV(taskName.Data());   
   if(!task) return 0x0;
-  if(!isMC) task->SelectCollisionCandidates(AliVEvent::kINT7);
+  if(fDataType.EqualTo("data")) task->SelectCollisionCandidates(AliVEvent::kINT7);
   task->SetMinTPCnCrossedRow(minTPCnCrossedRow);
   task->SetMinTPCNclsPID(minTPCnClsPID);
   task->SetMaxTPCchi2(maxTPCchi2);
@@ -55,13 +64,33 @@ AliAnalysisTaskBEpp13TeV* AddTaskBEpp13TeV(
   //gSystem->Load("libRAliEn");
   TGrid::Connect("alien://");
 
+  //===================================================================================================================
   // Multiplicity
-  TString profile;
-  if(isMC) profile = "GPMC";
-  else profile = "Data";
-  TString filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg.root";
-  printf("Multiplicity estimator from %s \n", filepath.Data());
+  TString filepath;
+  if(fDataType.EqualTo("data")){
+	if(fPass.EqualTo("pass1")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_Data_pass1.root";
+	}else if(fPass.EqualTo("pass2")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_Data_pass2.root";
+	}else return 0x0;
+  }else if(fDataType.EqualTo("gpmc")){
+	if(fPass.EqualTo("pass1")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_GPMC_pass1.root";
+	}else if(fPass.EqualTo("pass2")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_GPMC_pass2.root";
+	}else return 0x0;
+  }else if(fDataType.EqualTo("hfe")){
+	if(fPass.EqualTo("pass1")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_HFe_pass1.root";
+	}else if(fPass.EqualTo("pass2")){
+	  filepath = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/fileEstimatorAvg_HFe_pass2.root";
+	}else return 0x0;
+  }
+  printf("=========================================\n");
+  printf("\n\nMultiplicity estimator from %s \n\n", filepath.Data());
+  printf("=========================================\n");
   
+
   TFile* fileEstimator = TFile::Open(filepath.Data());
   if(!fileEstimator){
     printf("File with multiplicity estimator not found\n");
@@ -69,30 +98,51 @@ AliAnalysisTaskBEpp13TeV* AddTaskBEpp13TeV(
   }
   task->SetMultReference(multRef);
 
-  TProfile *multEstimatorAvg = (TProfile*)fileEstimator->Get(Form("fNtrkletAvg_%s", profile.Data()))->Clone(Form("fNtrkletAvg_%s", profile.Data()));
+  TProfile *multEstimatorAvg;
+  if(fPeriod.EqualTo("16period")){
+	multEstimatorAvg = (TProfile*)fileEstimator->Get("fNtrkletAvg_16period")->Clone("fNtrkletAvg_16period");
+	printf("\n +++++ File !!!fNtrkletAvg_16period!!! selected for Ntrklet equalization +++++\n");
+  }else if(fPeriod.EqualTo("17period")){
+	multEstimatorAvg = (TProfile*)fileEstimator->Get("fNtrkletAvg_17period")->Clone("fNtrkletAvg_17period");
+	printf("\n +++++ File !!!fNtrkletAvg_17period!!! selected for Ntrklet equalization +++++\n");
+  }
+  else if(fPeriod.EqualTo("18period")){
+	multEstimatorAvg = (TProfile*)fileEstimator->Get("fNtrkletAvg_18period")->Clone("fNtrkletAvg_18period");
+	printf("\n +++++ File !!!fNtrkletAvg_18period!!! selected for Ntrklet equalization +++++\n");
+  }
+  else if(fPeriod.EqualTo("16kl")){
+	multEstimatorAvg = (TProfile*)fileEstimator->Get("fNtrkletAvg_16kl")->Clone("fNtrkletAvg_16kl");
+	printf("\n +++++ File !!!fNtrkletAvg_16kl!!! selected for Ntrklet equalization +++++\n");
+  }
+  else return 0x0;
+
   if(!multEstimatorAvg) {
     printf("Multiplicity estimator not found! Please check your estimator file\n");
     return 0x0;
   }
-  printf("fNtrkletAvg_%s will be used in the multiplcity correction!!!", profile.Data());
+  printf("===============================================================\n");
+  printf("\n\n fNtrkletAvg_%s will be used in the multiplcity correction!!!\n\n", fPeriod.Data());
+  printf("===============================================================\n");
   task->SetEstimatorAvg(multEstimatorAvg);
+  //===================================================================================================================
 
-  if(isMC){
-    TString pathNchCorr = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/NchCorr.root";
+
+  if(!fDataType.EqualTo("data")){
+    TString pathNchCorr = "alien:///alice/cern.ch/user/j/jonghan/be_pp13TeV/weightNtrkCorr.root";
     printf("Correction for Ntrklet to Nch conversion from %s \n", pathNchCorr.Data());
     TFile *fileNchCorr = TFile::Open(pathNchCorr.Data());
     if(!fileNchCorr){
       printf("File %s is not found!", pathNchCorr.Data());
       return 0x0;
     }
-    TH1F *histNchCorr = (TH1F*)fileNchCorr->Get("histNchCorr")->Clone("histNchCorr");
-    TF1 *funcNchCorr = (TF1*)fileNchCorr->Get("funcNchCorr")->Clone("funcNchCorr");
-    task->SetNchCorrHist(histNchCorr);
-    task->SetNchCorrFunc(funcNchCorr);
+    TH1F *histWeight = (TH1F*)fileNchCorr->Get("histWeight")->Clone("histWeight");
+    TF1 *funcWeight = (TF1*)fileNchCorr->Get("funcWeight")->Clone("funcWeight");
+    task->SetNchCorrHist(histWeight);
+    task->SetNchCorrFunc(funcWeight);
   }
 
   
-  if(isMC){
+  if(!fDataType.EqualTo("data")){
 	task->SetMCanalysis();
 
 	// B meson pt correction

@@ -438,7 +438,7 @@ if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << end
 
   //connect containers
   TString nameContainer = Form("MesonJetCorrelation_Conv_%i_%i%s", meson, trainConfig, nameJetFinder.EqualTo("") == true ? "" : Form("_%s", nameJetFinder.Data()) );
-  AliAnalysisDataContainer* coutput = mgr->CreateContainer(nameContainer, TList::Class(), AliAnalysisManager::kOutputContainer, Form("MesonJetCorrelation_Conv_%i_%i.root", meson, trainConfig));
+  AliAnalysisDataContainer* coutput = mgr->CreateContainer(nameContainer, TList::Class(), AliAnalysisManager::kOutputContainer, Form("MJC_Co_%i_%i.root", meson, trainConfig));
   
   mgr->AddTask(task);
   mgr->ConnectInput(task, 0, cinput);
@@ -446,7 +446,7 @@ if(localDebug) cout << "Debug: AddTask_MesonJetCorr_Conv.C :" << __LINE__ << end
 
   if(doFillMesonDCATree){
     for(int i = 0; i<numberOfCuts; i++){
-      mgr->ConnectOutput(task,2+i,mgr->CreateContainer(Form("%s_%s_%s %s Meson DCA tree",(cuts.GetEventCut(i)).Data(),(cuts.GetPhotonCut(i)).Data(),(cuts.GetMesonCut(i)).Data(), nameJetFinder.Data()), TTree::Class(), AliAnalysisManager::kOutputContainer, Form("MesonJetCorrelation_Conv_%i_%i.root", meson, trainConfig)) );
+      mgr->ConnectOutput(task,2+i,mgr->CreateContainer(Form("%s_%s_%s %s Meson DCA tree",(cuts.GetEventCut(i)).Data(),(cuts.GetPhotonCut(i)).Data(),(cuts.GetMesonCut(i)).Data(), nameJetFinder.Data()), TTree::Class(), AliAnalysisManager::kOutputContainer, Form("MJC_Co_%i_%i.root", meson, trainConfig)) );
     }
   }
 
