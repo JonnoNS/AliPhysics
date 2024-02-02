@@ -103,9 +103,9 @@ ClassImp(AliAnalysisTaskDataSpeedOfSound)  // classimp: necessary for root
       fEventCuts(0x0),
       fMCStack(0),
       fMC(0),
-      fUseZDC(false),
       fUseMC(kFALSE),
-      fIsTPConly(kTRUE),
+      fIsSystematics(true),
+      fSystematic(1),
       fTrigger(AliVEvent::kCentral),
       fTrackFilter(0x0),
       fTrackFilterwoDCA(0x0),
@@ -113,15 +113,19 @@ ClassImp(AliAnalysisTaskDataSpeedOfSound)  // classimp: necessary for root
       fEtaCut(0.8),
       fEtaMin(-0.8),
       fEtaMax(0.8),
+      fEtaGappT(0.4),
+      fEtaGapNchMin(0.7),
+      fEtaGapNchMax(1.4),
       fPtMin(0.15),
       fV0Mmin(0.0),
-      fV0Mmax(100.0),
+      fV0Mmax(80.0),
       fHMCut(10.0),
       ftrackmult08(0),
       fv0mpercentile(0),
       fv0mamplitude(0),
       fTracklets14(0),
       fTracklets10(0),
+      fTrackletsEtaGap(0),
       fza(0),
       fzc(0),
       fzn(0),
@@ -150,13 +154,17 @@ ClassImp(AliAnalysisTaskDataSpeedOfSound)  // classimp: necessary for root
       hPtvsZCHM(0),
       hPtvsZNHM(0),
       hPhiEtaSPD(0),
+      hEtaGapSPD(0),
       hVtxZvsTracklets(0),
       hTrackletsvsV0MAmp14(0),
       hTrackletsvsV0MAmp10(0),
+      hTrackletsEtaGap(0),
       hPtvsTracklets14(0),
       hPtvsTracklets10(0),
+      hPtvsTrackletsEtaGap(0),
       pPtvsTracklets14(0),
       pPtvsTracklets10(0),
+      pPtvsTrackletsEtaGap(0),
       pPtvsZA(0),
       pPtvsZC(0),
       pPtvsZN(0) {
@@ -172,9 +180,9 @@ AliAnalysisTaskDataSpeedOfSound::AliAnalysisTaskDataSpeedOfSound(
       fEventCuts(0x0),
       fMCStack(0),
       fMC(0),
-      fUseZDC(false),
       fUseMC(kFALSE),
-      fIsTPConly(kTRUE),
+      fIsSystematics(true),
+      fSystematic(1),
       fTrigger(AliVEvent::kCentral),
       fTrackFilter(0x0),
       fTrackFilterwoDCA(0x0),
@@ -182,15 +190,19 @@ AliAnalysisTaskDataSpeedOfSound::AliAnalysisTaskDataSpeedOfSound(
       fEtaCut(0.8),
       fEtaMin(-0.8),
       fEtaMax(0.8),
+      fEtaGappT(0.4),
+      fEtaGapNchMin(0.7),
+      fEtaGapNchMax(1.4),
       fPtMin(0.15),
       fV0Mmin(0.0),
-      fV0Mmax(100.0),
+      fV0Mmax(80.0),
       fHMCut(10.0),
       ftrackmult08(0),
       fv0mpercentile(0),
       fv0mamplitude(0),
       fTracklets14(0),
       fTracklets10(0),
+      fTrackletsEtaGap(0),
       fza(0),
       fzc(0),
       fzn(0),
@@ -219,13 +231,17 @@ AliAnalysisTaskDataSpeedOfSound::AliAnalysisTaskDataSpeedOfSound(
       hPtvsZCHM(0),
       hPtvsZNHM(0),
       hPhiEtaSPD(0),
+      hEtaGapSPD(0),
       hVtxZvsTracklets(0),
       hTrackletsvsV0MAmp14(0),
       hTrackletsvsV0MAmp10(0),
+      hTrackletsEtaGap(0),
       hPtvsTracklets14(0),
       hPtvsTracklets10(0),
+      hPtvsTrackletsEtaGap(0),
       pPtvsTracklets14(0),
       pPtvsTracklets10(0),
+      pPtvsTrackletsEtaGap(0),
       pPtvsZA(0),
       pPtvsZC(0),
       pPtvsZN(0) {
@@ -248,39 +264,33 @@ AliAnalysisTaskDataSpeedOfSound::~AliAnalysisTaskDataSpeedOfSound() {
     fOutputList = 0x0;
   }
 }
+
 //_____________________________________________________________________________
 void AliAnalysisTaskDataSpeedOfSound::UserCreateOutputObjects() {
   if (!fTrackFilter) {
-    if (fIsTPConly)  // Default option
-    {
-      fTrackFilter = new AliAnalysisFilter("trackFilterTPConly");
-      AliESDtrackCuts* fCuts2 = AliESDtrackCuts::GetStandardTPCOnlyTrackCuts();
-      fCuts2->SetRequireTPCRefit(kTRUE);
-      fCuts2->SetRequireITSRefit(kTRUE);
-      fCuts2->SetEtaRange(-0.8, 0.8);
-      fTrackFilter->AddCuts(fCuts2);
-    } else {  // Same as in the Nch vs. mult in pp, p-Pb and Pb-Pb
-      std::cout << "Selecting non-TPConly cuts" << std::endl;
-      fTrackFilter = new AliAnalysisFilter("trackFilter2015");
-      AliESDtrackCuts* fCuts2_1 = new AliESDtrackCuts();
-      fCuts2_1->SetMaxFractionSharedTPCClusters(0.4);                //
-      fCuts2_1->SetMinRatioCrossedRowsOverFindableClustersTPC(0.8);  //
-      fCuts2_1->SetCutGeoNcrNcl(3., 130., 1.5, 0.85, 0.7);           //
-      fCuts2_1->SetMaxChi2PerClusterTPC(4);                          //
-      fCuts2_1->SetAcceptKinkDaughters(kFALSE);                      //
-      fCuts2_1->SetRequireTPCRefit(kTRUE);                           //
-      fCuts2_1->SetRequireITSRefit(kTRUE);                           //
-      fCuts2_1->SetClusterRequirementITS(AliESDtrackCuts::kSPD,
-                                         AliESDtrackCuts::kAny);    //
-      fCuts2_1->SetMaxDCAToVertexXYPtDep("0.0182+0.0350/pt^1.01");  //
-      fCuts2_1->SetMaxChi2TPCConstrainedGlobal(36);                 //
-      fCuts2_1->SetMaxDCAToVertexZ(2);                              //
-      fCuts2_1->SetDCAToVertex2D(kFALSE);                           //
-      fCuts2_1->SetRequireSigmaToVertex(kFALSE);                    //
-      fCuts2_1->SetMaxChi2PerClusterITS(36);                        //
-      fCuts2_1->SetEtaRange(-0.8, 0.8);
-      fTrackFilter->AddCuts(fCuts2_1);
+    fTrackFilter = new AliAnalysisFilter("trackFilter2015");
+    AliESDtrackCuts* fCuts = new AliESDtrackCuts();
+    fCuts->SetMaxFractionSharedTPCClusters(0.4);
+    fCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(0.8);
+    fCuts->SetCutGeoNcrNcl(3., 130., 1.5, 0.85, 0.7);
+    fCuts->SetMaxChi2PerClusterTPC(4);
+    fCuts->SetAcceptKinkDaughters(kFALSE);
+    fCuts->SetRequireTPCRefit(kTRUE);
+    fCuts->SetRequireITSRefit(kTRUE);
+    fCuts->SetClusterRequirementITS(AliESDtrackCuts::kSPD,
+                                    AliESDtrackCuts::kAny);
+    fCuts->SetMaxDCAToVertexXYPtDep("0.0182+0.0350/pt^1.01");
+    fCuts->SetMaxChi2TPCConstrainedGlobal(36);
+    fCuts->SetMaxDCAToVertexZ(2);
+    fCuts->SetDCAToVertex2D(kFALSE);
+    fCuts->SetRequireSigmaToVertex(kFALSE);
+    fCuts->SetMaxChi2PerClusterITS(36);
+    fCuts->SetEtaRange(-0.8, 0.8);
+
+    if (fIsSystematics) {
+      ChangeCut(fCuts);
     }
+    fTrackFilter->AddCuts(fCuts);
   }
 
   // track cuts to find contamination via DCA distribution
@@ -406,40 +416,58 @@ void AliAnalysisTaskDataSpeedOfSound::UserCreateOutputObjects() {
                "(0#geq#eta#leq0.8)",
                nch_Nbins, nch_bins, pt_Nbins, pt_bins);
 
-  hPhiEtaSPD = new TH2F("hPhiEtaSPD", ";#varphi; #eta", 80, 0, 2 * TMath::Pi(),
-                        80, -1.4, 1.4);
+  hPhiEtaSPD = new TH2F("hPhiEtaSPD", ";#varphi; #eta (|#eta|#leq1.4)", 80, 0,
+                        2 * TMath::Pi(), 80, -1.4, 1.4);
+
+  hEtaGapSPD = new TH1F("hEtaGapSPD", ";#eta (0.7#leq|#eta|#leq1.4) ;Counts",
+                        300, -1.5, 1.5);
 
   hVtxZvsTracklets =
       new TH2F("hVtxZvsTracklets", ";#it{Z}_{vtz} (cm); #it{N}_{tracklets}", 50,
                -10, 10, tracklets_Nbins, tracklets_bins);
 
   hTrackletsvsV0MAmp14 = new TH2F(
-      "hTrackletsvsV0MAmp14", "; #it{N}_{tracklet} (|#eta|<1.4); V0M Amp",
+      "hTrackletsvsV0MAmp14", "; #it{N}_{tracklet} (|#eta|#leq1.4); V0M Amp",
       tracklets_Nbins, tracklets_bins, v0mAmp_Nbins, v0mAmp_bins);
 
   hTrackletsvsV0MAmp10 = new TH2F(
-      "hTrackletsvsV0MAmp10", "; #it{N}_{tracklet} (|#eta|<1); V0M Amp",
+      "hTrackletsvsV0MAmp10", "; #it{N}_{tracklet} (|#eta|#leq1); V0M Amp",
       tracklets_Nbins, tracklets_bins, v0mAmp_Nbins, v0mAmp_bins);
+
+  hTrackletsEtaGap = new TH1F(
+      "hTrackletsEtaGap", "; #it{N}_{tracklet} (0.7#leq|#eta|#leq1.4); Entries",
+      tracklets_Nbins, tracklets_bins);
 
   hPtvsTracklets14 =
       new TH2D("hPtvsTracklets14",
-               "; #it{N}_{tracklet} (|#eta|<1.4); #it{p}_{T} (GeV/#it{c})",
+               "; #it{N}_{tracklet} (|#eta|#leq1.4); #it{p}_{T} (GeV/#it{c})",
                tracklets_Nbins, tracklets_bins, pt_Nbins, pt_bins);
 
   hPtvsTracklets10 =
       new TH2D("hPtvsTracklets10",
-               "; #it{N}_{tracklet} (|#eta|<1); #it{p}_{T} (GeV/#it{c})",
+               "; #it{N}_{tracklet} (|#eta|#leq1); #it{p}_{T} (GeV/#it{c})",
                tracklets_Nbins, tracklets_bins, pt_Nbins, pt_bins);
+
+  hPtvsTrackletsEtaGap = new TH2D(
+      "hPtvsTrackletsEtaGap",
+      "; #it{N}_{tracklet} (0.7#leq|#eta|#leq1.4); #it{p}_{T} (GeV/#it{c})",
+      tracklets_Nbins, tracklets_bins, pt_Nbins, pt_bins);
 
   pPtvsTracklets14 = new TProfile(
       "pPtvsTracklets14",
-      "; #it{N}_{tracklet} (|#eta|<1.4); #LT#it{p}_{T}#GT (GeV/#it{c})",
+      "; #it{N}_{tracklet} (|#eta|#leq1.4); #LT#it{p}_{T}#GT (GeV/#it{c})",
       tracklets_Nbins, tracklets_bins);
 
   pPtvsTracklets10 = new TProfile(
       "pPtvsTracklets10",
-      "; #it{N}_{tracklet} (|#eta|<1); #LT#it{p}_{T}#GT (GeV/#it{c})",
+      "; #it{N}_{tracklet} (|#eta|#leq1); #LT#it{p}_{T}#GT (GeV/#it{c})",
       tracklets_Nbins, tracklets_bins);
+
+  pPtvsTrackletsEtaGap =
+      new TProfile("pPtvsTrackletsEtaGap",
+                   "; #it{N}_{tracklet} (0.7#leq|#eta|#leq1.4); "
+                   "#LT#it{p}_{T}#GT (GeV/#it{c})",
+                   tracklets_Nbins, tracklets_bins);
 
   const int zdcN_Nbins{800};
   double zdcN_bins[zdcN_Nbins + 1] = {0.0};
@@ -495,13 +523,17 @@ void AliAnalysisTaskDataSpeedOfSound::UserCreateOutputObjects() {
   fOutputList->Add(hPtEtaNegvsNchEtaPos);
   fOutputList->Add(hPtEtaPosvsNchEtaNeg);
   fOutputList->Add(hPhiEtaSPD);
+  fOutputList->Add(hEtaGapSPD);
   fOutputList->Add(hVtxZvsTracklets);
   fOutputList->Add(hTrackletsvsV0MAmp14);
   fOutputList->Add(hTrackletsvsV0MAmp10);
+  fOutputList->Add(hTrackletsEtaGap);
   fOutputList->Add(hPtvsTracklets14);
   fOutputList->Add(pPtvsTracklets14);
   fOutputList->Add(hPtvsTracklets10);
   fOutputList->Add(pPtvsTracklets10);
+  fOutputList->Add(hPtvsTrackletsEtaGap);
+  fOutputList->Add(pPtvsTrackletsEtaGap);
 
   fOutputList->Add(hZAvsNchHM);
   fOutputList->Add(hZCvsNchHM);
@@ -564,7 +596,7 @@ void AliAnalysisTaskDataSpeedOfSound::UserExec(Option_t*) {
       fESD, AliESDtrackCuts::kTrackletsITSTPC, 0.8);
 
   //! Analyze only the 0--80 % V0M range
-  if (!(fv0mpercentile >= fV0Mmin && fv0mpercentile < 80.0)) {
+  if (!(fv0mpercentile >= fV0Mmin && fv0mpercentile < fV0Mmax)) {
     return;
   }
 
@@ -650,6 +682,7 @@ void AliAnalysisTaskDataSpeedOfSound::GetCalibratedV0Amplitude() {
 void AliAnalysisTaskDataSpeedOfSound::GetSPDMultiplicity() {
   fTracklets14 = 0;
   fTracklets10 = 0;
+  fTrackletsEtaGap = 0;
   int nTracklets = 0;
   float spdVtxZ = -999.0;
   AliMultiplicity* SPDptr = fESD->GetMultiplicity();
@@ -674,11 +707,16 @@ void AliAnalysisTaskDataSpeedOfSound::GetSPDMultiplicity() {
     double eta = SPDptr->GetEta(it);
     double phi = SPDptr->GetPhi(it);
 
-    if (TMath::Abs(eta) < 1.0) {
+    if (TMath::Abs(eta) <= 1.0) {
       fTracklets10++;
     }
 
-    if (TMath::Abs(eta) < 1.4) {
+    if (fEtaGapNchMin <= TMath::Abs(eta) && TMath::Abs(eta) <= fEtaGapNchMax) {
+      fTrackletsEtaGap++;
+      hEtaGapSPD->Fill(eta);
+    }
+
+    if (TMath::Abs(eta) <= 1.4) {
       hPhiEtaSPD->Fill(phi, eta);
       fTracklets14++;
     }
@@ -760,6 +798,12 @@ void AliAnalysisTaskDataSpeedOfSound::MultiplicityDistributions() {
       hPtvsTracklets14->Fill(fTracklets14, pt);
       pPtvsTracklets14->Fill(fTracklets14, pt);
     }
+    if (fTrackletsEtaGap > 0) {
+      if (TMath::Abs(track->Eta()) <= fEtaGappT) {
+        hPtvsTrackletsEtaGap->Fill(fTrackletsEtaGap, pt);
+        pPtvsTrackletsEtaGap->Fill(fTrackletsEtaGap, pt);
+      }
+    }
 
     if (fv0mpercentile <= fHMCut) {
       hPtvsZCHM->Fill(fzc, pt);
@@ -782,6 +826,9 @@ void AliAnalysisTaskDataSpeedOfSound::MultiplicityDistributions() {
   }
   if (fTracklets14 > 0) {
     hTrackletsvsV0MAmp14->Fill(fTracklets14, fv0mamplitude);
+  }
+  if (fTrackletsEtaGap > 0) {
+    hTrackletsEtaGap->Fill(fTrackletsEtaGap);
   }
 
   if (fv0mpercentile <= fHMCut) {
@@ -873,8 +920,8 @@ Bool_t AliAnalysisTaskDataSpeedOfSound::HasRecVertex() {
   double dz = bool(fFlag & AliEventCuts::kVertexSPD) &&
                       bool(fFlag & AliEventCuts::kVertexTracks)
                   ? vtTrc->GetZ() - vtSPD->GetZ()
-                  : 0.;  /// If one of the two vertices is not available this
-                         /// cut is always passed.
+                  : 0.;  /// If one of the two vertices is not available
+                         /// this cut is always passed.
   double errTot = TMath::Sqrt(covTrc[5] + covSPD[5]);
   double errTrc =
       bool(fFlag & AliEventCuts::kVertexTracks) ? TMath::Sqrt(covTrc[5]) : 1.;
@@ -884,8 +931,8 @@ Bool_t AliAnalysisTaskDataSpeedOfSound::HasRecVertex() {
   double vtSPDdispersion = vtSPDESD ? vtSPDESD->GetDispersion() : 0;
   if ((TMath::Abs(dz) <= fMaxDeltaSpdTrackAbsolute &&
        nsigTot <= fMaxDeltaSpdTrackNsigmaSPD &&
-       nsigTrc <=
-           fMaxDeltaSpdTrackNsigmaTrack) &&  // discrepancy track-SPD vertex
+       nsigTrc <= fMaxDeltaSpdTrackNsigmaTrack) &&  // discrepancy
+                                                    // track-SPD vertex
       (!vtSPD->IsFromVertexerZ() ||
        TMath::Sqrt(covSPD[5]) <= fMaxResolutionSPDvertex) &&
       (!vtSPD->IsFromVertexerZ() ||
@@ -898,4 +945,66 @@ Bool_t AliAnalysisTaskDataSpeedOfSound::HasRecVertex() {
                   (TESTBIT(fFlag, AliEventCuts::kVertexQuality));
 
   return hasVtx;
+}
+
+//____________________________________________________________
+
+void AliAnalysisTaskDataSpeedOfSound::ChangeCut(AliESDtrackCuts* fCuts) {
+  cout << "Changing track cut (systematic variation): " << fSystematic << '\n';
+  switch (fSystematic) {
+    case 0:
+      fCuts->SetMaxDCAToVertexZ(1);
+      break;
+    case 1:
+      fCuts->SetMaxDCAToVertexZ(5);
+      break;
+    case 2:
+      fCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(0.7);
+      break;
+    case 3:
+      fCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(0.9);
+      break;
+    case 4:
+      fCuts->SetMaxFractionSharedTPCClusters(0.2);
+      break;
+    case 5:
+      fCuts->SetMaxFractionSharedTPCClusters(1);
+      break;
+    case 6:
+      fCuts->SetMaxChi2PerClusterTPC(3);
+      break;
+    case 7:
+      fCuts->SetMaxChi2PerClusterTPC(5);
+      break;
+    case 8:
+      fCuts->SetMaxChi2PerClusterITS(25);
+      break;
+    case 9:
+      fCuts->SetMaxChi2PerClusterITS(49);
+      break;
+    case 10:
+      fCuts->SetClusterRequirementITS(AliESDtrackCuts::kSPD,
+                                      AliESDtrackCuts::kNone);
+      break;
+    case 11:
+      fCuts->SetCutGeoNcrNcl(2., 130., 1.5, 0.85, 0.7);
+      break;
+    case 12:
+      fCuts->SetCutGeoNcrNcl(4., 130., 1.5, 0.85, 0.7);
+      break;
+    case 13:
+      fCuts->SetCutGeoNcrNcl(3., 120., 1.5, 0.85, 0.7);
+      break;
+    case 14:
+      fCuts->SetCutGeoNcrNcl(3., 140., 1.5, 0.85, 0.7);
+      break;
+    case 15:
+      fCuts->SetMaxChi2TPCConstrainedGlobal(25);
+      break;
+    case 16:
+      fCuts->SetMaxChi2TPCConstrainedGlobal(49);
+      break;
+    default:
+      cout << "fSystematic not defined!" << '\n';
+  }
 }

@@ -325,6 +325,8 @@ AliCaloPhotonCuts::AliCaloPhotonCuts(Int_t isMC, const char *name,const char *ti
   fHistElectronPositronClusterMatchSub(NULL),
   fHistElectronPositronClusterMatchEoverP(NULL),
   fHistElectronPositronClusterMatchEoverPonVtx(NULL),
+  fHistElectronPositronClusterMatchEoverPVsE(NULL),
+  fHistElectronPositronClusterMatchEoverPonVtxVsE(NULL),
   fHistElectronClusterMatch(NULL),
   fHistPositronClusterMatch(NULL),
   fHistTrueElectronPositronClusterMatch(NULL),
@@ -578,6 +580,8 @@ AliCaloPhotonCuts::AliCaloPhotonCuts(const AliCaloPhotonCuts &ref) :
   fHistElectronPositronClusterMatchSub(NULL),
   fHistElectronPositronClusterMatchEoverP(NULL),
   fHistElectronPositronClusterMatchEoverPonVtx(NULL),
+  fHistElectronPositronClusterMatchEoverPVsE(NULL),
+  fHistElectronPositronClusterMatchEoverPonVtxVsE(NULL),
   fHistElectronClusterMatch(NULL),
   fHistPositronClusterMatch(NULL),
   fHistTrueElectronPositronClusterMatch(NULL),
@@ -1781,8 +1785,8 @@ void AliCaloPhotonCuts::InitCutHistograms(TString name){
         }
       }
       //----------------
-    }
-  }
+    } // fExtendedMatchAndQA == 1 || fExtendedMatchAndQA == 3 || fExtendedMatchAndQA == 5
+  } // fUseDistTrackToCluster && !fDoLightOutput
   if( fUseDistTrackToCluster && fIsMC && (fExtendedMatchAndQA == 1 || fExtendedMatchAndQA == 3 || fExtendedMatchAndQA == 5 )){
     // TM efficiency histograms
     const Int_t nEmcalEtaBins             = 96;
@@ -1964,17 +1968,29 @@ void AliCaloPhotonCuts::InitCutHistograms(TString name){
     fHistElectronPositronClusterMatchSub->GetYaxis()->SetTitle("E_{cl} - P_{track, EMC}");
     fHistograms->Add(fHistElectronPositronClusterMatchSub);
 
-    fHistElectronPositronClusterMatchEoverP = new TH2F(Form("MatchedElectronPositronEOverP %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on EMC E over P",
+    fHistElectronPositronClusterMatchEoverP = new TH2F(Form("MatchedElectronPositronEOverP %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on EMC E over track P",
                                                       300,0,1.5,500,0,50.);
     fHistElectronPositronClusterMatchEoverP->GetXaxis()->SetTitle("E_{cl} / P_{track, EMC}");
     fHistElectronPositronClusterMatchEoverP->GetYaxis()->SetTitle("P_{T} (GeV)");
     fHistograms->Add(fHistElectronPositronClusterMatchEoverP);
 
-    fHistElectronPositronClusterMatchEoverPonVtx = new TH2F(Form("MatchedElectronPositronEOverPonVtx %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on Vtx E over P",
+    fHistElectronPositronClusterMatchEoverPonVtx = new TH2F(Form("MatchedElectronPositronEOverPonVtx %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on Vtx E over track P",
                                                       300,0,1.5,500,0,50.);
     fHistElectronPositronClusterMatchEoverPonVtx->GetXaxis()->SetTitle("E_{cl} / P_{track, Vtx}");
     fHistElectronPositronClusterMatchEoverPonVtx->GetYaxis()->SetTitle("P_{T} (GeV)");
     fHistograms->Add(fHistElectronPositronClusterMatchEoverPonVtx);
+
+    fHistElectronPositronClusterMatchEoverPVsE = new TH2F(Form("MatchedElectronPositronEOverPVsE %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on EMC E over track P",
+                                                      300,0,1.5,500,0,50.);
+    fHistElectronPositronClusterMatchEoverPVsE->GetXaxis()->SetTitle("E_{cl} / P_{track, EMC}");
+    fHistElectronPositronClusterMatchEoverPVsE->GetYaxis()->SetTitle("E_{cl} (GeV)");
+    fHistograms->Add(fHistElectronPositronClusterMatchEoverPVsE);
+
+    fHistElectronPositronClusterMatchEoverPonVtxVsE = new TH2F(Form("MatchedElectronPositronEOverPonVtxVsE %s",GetCutNumber().Data()), "Matched Electron Positron tracks with P on Vtx E over track P",
+                                                      300,0,1.5,500,0,50.);
+    fHistElectronPositronClusterMatchEoverPonVtxVsE->GetXaxis()->SetTitle("E_{cl} / P_{track, Vtx}");
+    fHistElectronPositronClusterMatchEoverPonVtxVsE->GetYaxis()->SetTitle("E_{cl} (GeV)");
+    fHistograms->Add(fHistElectronPositronClusterMatchEoverPonVtxVsE);
 
     if(fExtendedMatchAndQA > 1 ){
       fHistElectronClusterMatch = new TH2F(Form("MatchedElectronTrackPClusE %s",GetCutNumber().Data()), "Matched Electron tracks with P on EMC",
@@ -2035,6 +2051,7 @@ void AliCaloPhotonCuts::InitCutHistograms(TString name){
       fHistElectronPositronClusterMatch->Sumw2();
       fHistElectronPositronClusterMatchSub->Sumw2();
       fHistElectronPositronClusterMatchEoverP->Sumw2();
+      fHistElectronPositronClusterMatchEoverPVsE->Sumw2();
       fHistTrueElectronPositronClusterMatch->Sumw2();
       fHistTrueNoElectronPositronClusterMatch->Sumw2();
       fHistElectronClusterMatchTruePID->Sumw2();
@@ -2852,7 +2869,7 @@ Bool_t AliCaloPhotonCuts::ClusterQualityCuts(AliVCluster* cluster, AliVEvent *ev
     nlabelsMatchedTracks          = fCaloTrackMatcher->GetNMatchedTrackIDsForCluster(event, cluster->GetID(), fFuncPtDepEta, fFuncPtDepPhi);
   }
 
-  if(fExtendedMatchAndQA == 1 || fExtendedMatchAndQA == 3 || fExtendedMatchAndQA == 5) {
+  if((fExtendedMatchAndQA == 1 || fExtendedMatchAndQA == 3 || fExtendedMatchAndQA == 5) && (fUseDistTrackToCluster && !fDoLightOutput) ) {
     fHistClusterNMatched->Fill(nlabelsMatchedTracks);
   }
 
@@ -4545,8 +4562,14 @@ void AliCaloPhotonCuts::MatchElectronTracksToClusters(AliVEvent* event, AliMCEve
       }
       fHistElectronPositronClusterMatch->Fill(cluster->E(), inTrack->GetTrackPOnEMCal(), weight);
       fHistElectronPositronClusterMatchSub->Fill(cluster->E(), cluster->E() - inTrack->GetTrackPOnEMCal(), weight);
-      if(inTrack->GetTrackPOnEMCal() > 0) fHistElectronPositronClusterMatchEoverP->Fill(cluster->E() / inTrack->GetTrackPOnEMCal(), inTrack->Pt(), weight);
-      if(inTrack->P() > 0) fHistElectronPositronClusterMatchEoverPonVtx->Fill(cluster->E() / inTrack->P(), inTrack->Pt(), weight);
+      if(inTrack->GetTrackPOnEMCal() > 0) {
+        fHistElectronPositronClusterMatchEoverP->Fill(cluster->E() / inTrack->GetTrackPOnEMCal(), inTrack->Pt(), weight);
+        fHistElectronPositronClusterMatchEoverPVsE->Fill(cluster->E() / inTrack->GetTrackPOnEMCal(), cluster->E(), weight);
+      }
+      if(inTrack->P() > 0) {
+        fHistElectronPositronClusterMatchEoverPonVtx->Fill(cluster->E() / inTrack->P(), inTrack->Pt(), weight);
+        fHistElectronPositronClusterMatchEoverPonVtxVsE->Fill(cluster->E() / inTrack->P(), cluster->E(), weight);
+      }
 
       if(isMC){
         if(!fAODMCTrackArray) fAODMCTrackArray = dynamic_cast<TClonesArray*>(event->FindListObject(AliAODMCParticle::StdBranchName()));
@@ -5941,21 +5964,18 @@ Bool_t AliCaloPhotonCuts::SetTrackMatchingCut(Int_t trackMatching)
       break;
     case 18: //i TM cut for PbPb EMC clusters - tight
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseTMMIPsubtraction) fUseTMMIPsubtraction=kTRUE;
       fMaxDistTrackToClusterEta = 0.010;
       fMinDistTrackToClusterPhi = -0.011;
       fMaxDistTrackToClusterPhi = 0.011;
       break;
     case 19: //j TM cut for PbPb EMC clusters - loose
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseTMMIPsubtraction) fUseTMMIPsubtraction=kTRUE;
       fMaxDistTrackToClusterEta = 0.015;
       fMinDistTrackToClusterPhi = -0.02;
       fMaxDistTrackToClusterPhi = 0.02;
       break;
     case 20: //k TM cut for PbPb EMC clusters
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseTMMIPsubtraction) fUseTMMIPsubtraction=kTRUE;
       fUsePtDepTrackToCluster = 1;
       fFuncPtDepEta = new TF1("funcEta20", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
       fFuncPtDepEta->SetParameters(0.04, 0.010, 2.5);
@@ -6043,11 +6063,11 @@ Bool_t AliCaloPhotonCuts::SetTrackMatchingCut(Int_t trackMatching)
       break;
     case 29: // cut char 't' (no TM but with mean energy correction for overlap), only use with cell tm!
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseEOverPVetoTM) fUseEOverPVetoTM=kTRUE;
-      fUseDistTrackToCluster = kFALSE;
-      fMaxDistTrackToClusterEta = 0;
-      fMinDistTrackToClusterPhi = 0;
-      fMaxDistTrackToClusterPhi = 0;
+      fUsePtDepTrackToCluster = 1;
+      fFuncPtDepEta = new TF1("funcEta29", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepEta->SetParameters(0.04, 0.010, 2.5);
+      fFuncPtDepPhi = new TF1("funcPhi29", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepPhi->SetParameters(0.09, 0.015, 2.);
       fFuncPoissonParamCent = new TF1("fFuncPoissonParamCent29", "[0] * TMath::Exp( (x + [1] ) / [2] )", 0., 90.);
       fFuncNMatchedTracks = new TF1("fFuncNMatchedTracks29", "TMath::Poisson(x,[0])", 0., 10.);
       fDoEnergyCorrectionForOverlap = 1;
@@ -6066,11 +6086,11 @@ Bool_t AliCaloPhotonCuts::SetTrackMatchingCut(Int_t trackMatching)
 
     case 30: // cut char 'u' (no TM but with random energy correction for overlap), only use with cell tm!
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseEOverPVetoTM) fUseEOverPVetoTM=kTRUE;
-      fUseDistTrackToCluster = kFALSE;
-      fMaxDistTrackToClusterEta = 0;
-      fMinDistTrackToClusterPhi = 0;
-      fMaxDistTrackToClusterPhi = 0;
+      fUsePtDepTrackToCluster = 1;
+      fFuncPtDepEta = new TF1("funcEta30", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepEta->SetParameters(0.04, 0.010, 2.5);
+      fFuncPtDepPhi = new TF1("funcPhi30", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepPhi->SetParameters(0.09, 0.015, 2.);
       fFuncPoissonParamCent = new TF1("fFuncPoissonParamCent30", "[0] * TMath::Exp( (x + [1] ) / [2] )", 0., 90.);
       fFuncNMatchedTracks = new TF1("fFuncNMatchedTracks30", "TMath::Poisson(x,[0])", 0., 10.);
       fDoEnergyCorrectionForOverlap = 2;
@@ -6089,11 +6109,11 @@ Bool_t AliCaloPhotonCuts::SetTrackMatchingCut(Int_t trackMatching)
 
     case 31: // cut char 'v' (no TM but with mean energy correction for overlap using mean charge particle per cell), only use with cell tm!
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseEOverPVetoTM) fUseEOverPVetoTM=kTRUE;
-      fUseDistTrackToCluster = kFALSE;
-      fMaxDistTrackToClusterEta = 0;
-      fMinDistTrackToClusterPhi = 0;
-      fMaxDistTrackToClusterPhi = 0;
+      fUsePtDepTrackToCluster = 1;
+      fFuncPtDepEta = new TF1("funcEta31", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepEta->SetParameters(0.04, 0.010, 2.5);
+      fFuncPtDepPhi = new TF1("funcPhi31", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepPhi->SetParameters(0.09, 0.015, 2.);
       fFuncNMatchedTracks = new TF1("fFuncNMatchedTracks31", "pol3", 0., 90.);
       fDoEnergyCorrectionForOverlap = 3;
       fFuncNMatchedTracks->SetParameters(6.79381e-02, -2.29978e-03, 2.80462e-05, -1.22743e-07);
@@ -6112,11 +6132,11 @@ Bool_t AliCaloPhotonCuts::SetTrackMatchingCut(Int_t trackMatching)
     
     case 32: // cut char 'w' NonLin like fitted to pp 13 TeV
       if (!fUseDistTrackToCluster) fUseDistTrackToCluster=kTRUE;
-      if (!fUseEOverPVetoTM) fUseEOverPVetoTM=kTRUE;
-      fUseDistTrackToCluster = kFALSE;
-      fMaxDistTrackToClusterEta = 0;
-      fMinDistTrackToClusterPhi = 0;
-      fMaxDistTrackToClusterPhi = 0;
+      fUsePtDepTrackToCluster = 1;
+      fFuncPtDepEta = new TF1("funcEta32", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepEta->SetParameters(0.04, 0.010, 2.5);
+      fFuncPtDepPhi = new TF1("funcPhi32", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      fFuncPtDepPhi->SetParameters(0.09, 0.015, 2.);
       fDoEnergyCorrectionForOverlap = 4;
       break;
 
@@ -7573,6 +7593,24 @@ void AliCaloPhotonCuts::ApplyNonLinearity(AliVCluster* cluster, Int_t isMC, AliV
         else energy *= FunctionNL_kPi0MCv3(energy);
       }
       break;
+    
+    // Same as case 1 for EMCal, but with additional 1% shift (used if TRD structures are cut out)
+    case 7:
+      if( fClusterType == 1 || fClusterType == 3 || fClusterType == 4){
+        // TB parametrization for 100MeV points for data an MC
+        if(isMC){
+          energy /= FunctionNL_OfficialTB_100MeV_MC_V2(energy);
+          energy /= FunctionNL_kSDM(energy, 0.979235, -3.17131, -0.464198);
+          energy /= FunctionNL_DExp(energy, 1.0363369, 0.5659247074, -2.7818482972, 1.0437012864, 0.3620283273, -2.8321172480);
+          energy /= 1.0125; // 1% more than in case 1
+          if(cluster->GetNCells() == 1){ // different fine tuning for 1 cell clusters
+            energy /= 0.99;
+          }
+        } else {
+          energy /= FunctionNL_OfficialTB_100MeV_Data_V2_NoScale(energy);
+        }
+      }
+      break;
 
     // kPi0MCv6 for MC and kSDMv6 for data
     case 8:
@@ -8850,6 +8888,15 @@ void AliCaloPhotonCuts::ApplyNonLinearity(AliVCluster* cluster, Int_t isMC, AliV
       }
       break;
 
+    // *************** 75 + x **** experimental settings for EMCal studies
+    // Apply MC test beam NonLinto both data and MC
+    case 75:
+      energy /= FunctionNL_OfficialTB_100MeV_MC_V2(energy);
+      if(isMC>0){
+        energy /= FunctionNL_DExp(energy, 1.0163161769, 1.0745426880, -2.6533554672, 1.0253717488, 0.8132587660, -2.5997134051);
+      }
+      break;
+
     // *************** 80 + x **** modified tender Settings 1 - PbPb
 
     // NonLinearity LHC15o PbPb ConvCalo  - only shifting MC
@@ -9645,7 +9692,8 @@ AliCaloPhotonCuts::MCSet AliCaloPhotonCuts::FindEnumForMCSet(TString namePeriod)
             namePeriod.CompareTo("LHC20e3b") == 0 ||
             namePeriod.CompareTo("LHC20e3c") == 0 ||
             namePeriod.CompareTo("LHC20g10") == 0 ||
-            namePeriod.CompareTo("LHC22b5")  == 0)   return kPbPb5T18HIJING;
+            namePeriod.CompareTo("LHC22b5")  == 0 ||
+            namePeriod.BeginsWith("LHC24a1"))   return kPbPb5T18HIJING;
 
   // pp 13 TeV 2016 MB prod
   else if ( namePeriod.CompareTo("LHC16P1Pyt8") == 0 ||
@@ -10781,19 +10829,60 @@ Double_t AliCaloPhotonCuts::CorrectEnergyForOverlap(float meanCent, float E){
     case 3:
       return 0.5 * fFuncNMatchedTracks->Eval(meanCent) * GetMeanEForOverlap(meanCent, fParamMeanTrackPt);
     case 4:
-      if(meanCent < 10){
-        if(E > 3.5) E = 3.5;
-        return 1.09645e+00 - 3.49489e-01 * E + 1.56646e-01 * E * E - 2.03620e-02 * E * E * E;
-      } else if (meanCent < 30){
-        if(E > 3.8) E = 3.8;
-        return 1.03972e+00 - 1.79650e-01 * E + 8.41570e-02 * E * E - 1.13454e-02 * E * E * E;
-      } else if (meanCent < 50){
-        if(E > 3.3) E = 3.3;
-        return 1.00734e+00 - 6.42114e-02 * E + 3.03931e-02 * E * E - 4.16131e-03 * E * E * E;
-      } else {
-        if(E > 3.5) E = 3.5;
-        return 9.95241e-01 - 1.49339e-02 * E + 8.08355e-03 * E * E - 1.33936e-03 * E * E * E;
+      {
+        double temp = 0.0;
+        double tempE = 0.0;
+        if(meanCent < 10){
+          if(E > 3.5) tempE = 3.5;
+          else tempE = E;
+          temp = 1.09645e+00 - 3.49489e-01 * tempE + 1.56646e-01 * tempE * tempE - 2.03620e-02 * tempE * tempE * tempE;
+          // 2nd Iter step
+          if(E > 10.) tempE = 10.;
+          else tempE = E;
+          if(!fIsMC){
+            return temp * (9.92572e-01 + 6.80735e-03 * tempE - 1.19358e-03 * tempE * tempE + 4.56926e-05 * tempE * tempE * tempE);
+          } else {
+            return temp * (9.92242e-01 + 6.26848e-04 * tempE - 4.41504e-04 * tempE * tempE + 1.95505e-05 * tempE * tempE * tempE);
+          }
+        } else if (meanCent < 30){
+          if(E > 3.8) tempE = 3.8;
+          else tempE = E;
+          temp = 1.03972e+00 - 1.79650e-01 * tempE + 8.41570e-02 * tempE * tempE - 1.13454e-02 * tempE * tempE * tempE;
+          // 2nd Iter step
+          if(E > 10.) tempE = 10.;
+          else tempE = E;
+          if(!fIsMC){
+            return temp * (9.92422e-01 + 7.25722e-03 * tempE - 1.35218e-03 * tempE * tempE + 5.60276e-05 * tempE * tempE * tempE);
+          } else {
+            return temp * (9.70213e-01 + 7.23533e-03 * tempE - 9.56039e-04 * tempE * tempE + 3.41438e-05 * tempE * tempE * tempE);
+          }
+        } else if (meanCent < 50){
+          if(E > 3.3) tempE = 3.3;
+          else tempE = E;
+          temp = 1.00734e+00 - 6.42114e-02 * tempE + 3.03931e-02 * tempE * tempE - 4.16131e-03 * tempE * tempE * tempE;
+          // 2nd Iter step
+          if(E > 10.) tempE = 10.;
+          else tempE = E;
+          if(!fIsMC){
+            return temp * (9.96827e-01 + 2.96262e-03 * tempE - 5.29817e-04 * tempE * tempE + 2.23712e-05 * tempE * tempE * tempE);
+          } else {
+            return temp * (9.80774e-01 + 5.53179e-03 * tempE - 6.76146e-04 * tempE * tempE + 2.37495e-05 * tempE * tempE * tempE);
+          }
+        } else {
+          if(E > 3.5) tempE = 3.5;
+          else tempE = E;
+          temp = 9.95241e-01 - 1.49339e-02 * tempE + 8.08355e-03 * tempE * tempE - 1.33936e-03 * tempE * tempE * tempE;
+          // 2nd Iter step
+          if(E > 10.) tempE = 10.;
+          else tempE = E;
+          if(!fIsMC){
+            return temp * (9.93144e-01 + 5.27060e-03 * tempE - 1.26703e-03 * tempE * tempE + 6.77855e-05 * tempE * tempE * tempE);
+          } else {
+            return temp * (9.81776e-01 + 5.65088e-03 * tempE - 6.70857e-04 * tempE * tempE + 2.28391e-05 * tempE * tempE * tempE);
+          }
+        }
       }
+      break;
     default:
       return 0;
   }

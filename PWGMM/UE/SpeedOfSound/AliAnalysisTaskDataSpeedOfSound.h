@@ -42,14 +42,22 @@ class AliAnalysisTaskDataSpeedOfSound : public AliAnalysisTaskSE {
   void SetV0Mmax(double V0Mmax) { fV0Mmax = V0Mmax; }  // Set V0M max value
   void SetHMCut(double HMcut) { fHMCut = HMcut; }      // Set V0M max value
   void SetUseMC(bool mc = false) { fUseMC = mc; }      // use to analyse MC data
-  void SetUseZDC(bool zdc = false) { fUseZDC = zdc; }  // use ZDC selection
   void SetEtaCut(const double& etacut) { fEtaCut = etacut; }
   void SetEtaMinCut(const double& etamin) { fEtaMin = etamin; }
   void SetEtaMaxCut(const double& etamax) { fEtaMax = etamax; }
+  void SetEtaGappT(const double& eta) { fEtaGappT = eta; }
+  void SetEtaGapNch(const double& etamin, const double& etamax) {
+    fEtaGapNchMin = etamin;
+    fEtaGapNchMax = etamax;
+  }
   void SetPtMin(const double& ptmin) { fPtMin = ptmin; }
-  void SetTrackCuts(bool TPConly = true) { fIsTPConly = TPConly; }
   void SetTrigger(UInt_t trigger = AliVEvent::kINT7) { fTrigger = trigger; }
   bool HasRecVertex();
+  void SetSystematics(bool issystematics = true, int systematic = 1) {
+    fIsSystematics = issystematics;
+    fSystematic = systematic;
+  }
+  void ChangeCut(AliESDtrackCuts* fCuts);
 
  protected:
  private:
@@ -57,9 +65,9 @@ class AliAnalysisTaskDataSpeedOfSound : public AliAnalysisTaskSE {
   AliEventCuts fEventCuts;
   AliStack* fMCStack;
   AliMCEvent* fMC;
-  bool fUseZDC;
   bool fUseMC;
-  bool fIsTPConly;
+  bool fIsSystematics;
+  int fSystematic;
   UInt_t fTrigger;
   AliAnalysisFilter* fTrackFilter;
   AliAnalysisFilter* fTrackFilterwoDCA;
@@ -67,6 +75,9 @@ class AliAnalysisTaskDataSpeedOfSound : public AliAnalysisTaskSE {
   double fEtaCut;
   double fEtaMin;
   double fEtaMax;
+  double fEtaGappT;
+  double fEtaGapNchMin;
+  double fEtaGapNchMax;
   double fPtMin;
   double fV0Mmin;
   double fV0Mmax;
@@ -76,6 +87,7 @@ class AliAnalysisTaskDataSpeedOfSound : public AliAnalysisTaskSE {
   float fv0mamplitude;
   int fTracklets14;
   int fTracklets10;
+  int fTrackletsEtaGap;
   double fza;
   double fzc;
   double fzn;
@@ -105,13 +117,17 @@ class AliAnalysisTaskDataSpeedOfSound : public AliAnalysisTaskSE {
   TH2D* hPtvsZCHM;
   TH2D* hPtvsZNHM;
   TH2F* hPhiEtaSPD;
+  TH1F* hEtaGapSPD;
   TH2F* hVtxZvsTracklets;
   TH2F* hTrackletsvsV0MAmp14;
   TH2F* hTrackletsvsV0MAmp10;
+  TH1F* hTrackletsEtaGap;
   TH2D* hPtvsTracklets14;
   TH2D* hPtvsTracklets10;
+  TH2D* hPtvsTrackletsEtaGap;
   TProfile* pPtvsTracklets14;
   TProfile* pPtvsTracklets10;
+  TProfile* pPtvsTrackletsEtaGap;
   TProfile* pPtvsZA;
   TProfile* pPtvsZC;
   TProfile* pPtvsZN;
